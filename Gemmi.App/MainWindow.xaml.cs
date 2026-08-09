@@ -28,44 +28,76 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        InitializeComponent();
+        App.Log("MainWindow constructor start");
+        try
+        {
+            InitializeComponent();
+            App.Log("InitializeComponent succeeded");
+        }
+        catch (Exception ex)
+        {
+            App.Log($"InitializeComponent FAILED: {ex.Message}\n{ex.StackTrace}");
+            if (ex.InnerException != null)
+            {
+                App.Log($"InitializeComponent InnerException: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}");
+            }
+        }
+
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
+        App.Log("MainWindow constructor finished");
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        Topmost = true;
-        Activate();
-        Focus();
+        App.Log("MainWindow_Loaded start");
+        try
+        {
+            Topmost = true;
+            Activate();
+            Focus();
+            Topmost = false;
+        }
+        catch (Exception ex)
+        {
+            App.Log($"Topmost/Activate error: {ex.Message}");
+        }
 
         try
         {
             _speechSynth = new SpeechSynthesisEngine();
+            App.Log("SpeechSynthesisEngine instantiated");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Speech Synthesizer Inactive]: {ex.Message}");
+            App.Log($"SpeechSynthesisEngine Inactive: {ex.Message}");
         }
 
-        _hal.InitializeNodeHardware(_state);
-        TxtAlertsLog.Text = $"[System Started] Gemmi Engine v1.0.0 Pro Initialized on Node '{_state.Telemetry.NodeId}'.\n24/7 Asynchronous Second Brain online.\n";
+        try
+        {
+            _hal.InitializeNodeHardware(_state);
+            TxtAlertsLog.Text = $"[System Started] Gemmi Engine v1.0.0 Pro Initialized on Node '{_state.Telemetry.NodeId}'.\n24/7 Asynchronous Second Brain online.\n";
 
-        // Start background perception loops
-        _ = Task.Run(() => _audioVad.StartVadLoopAsync(_state, _cts.Token));
-        _ = Task.Run(() => _visionIngest.StartVisionLoopAsync(_state, _cts.Token));
-        _ = Task.Run(() => _spontaneousEval.StartSpontaneousEvaluatorLoopAsync(_state, OnSpontaneousInitiated, _cts.Token));
-        _ = Task.Run(() => _codeMonitor.StartCodeMonitorLoopAsync(_state, OnActiveIdeDetected, _cts.Token));
+            _ = Task.Run(() => _audioVad.StartVadLoopAsync(_state, _cts.Token));
+            _ = Task.Run(() => _visionIngest.StartVisionLoopAsync(_state, _cts.Token));
+            _ = Task.Run(() => _spontaneousEval.StartSpontaneousEvaluatorLoopAsync(_state, OnSpontaneousInitiated, _cts.Token));
+            _ = Task.Run(() => _codeMonitor.StartCodeMonitorLoopAsync(_state, OnActiveIdeDetected, _cts.Token));
 
-        // Load initial HIL milestones, sensors, and mesh nodes
-        var milestones = JtagUartProfiler.CaptureBootProfile("Rev 3");
-        GridHilMilestones.ItemsSource = milestones;
+            var milestones = JtagUartProfiler.CaptureBootProfile("Rev 3");
+            GridHilMilestones.ItemsSource = milestones;
 
-        var sensors = HardwareSensorGateway.ScanHardwareSensors();
-        GridHardwareSensors.ItemsSource = sensors;
+            var sensors = HardwareSensorGateway.ScanHardwareSensors();
+            GridHardwareSensors.ItemsSource = sensors;
 
-        var nodes = await MeshAutoDiscovery.ScanNetBirdMeshAsync();
-        GridMeshNodes.ItemsSource = nodes;
+            var nodes = await MeshAutoDiscovery.ScanNetBirdMeshAsync();
+            GridMeshNodes.ItemsSource = nodes;
+
+            App.Log("MainWindow_Loaded finished successfully");
+        }
+        catch (Exception ex)
+        {
+            App.Log($"MainWindow_Loaded Exception: {ex.Message}\n{ex.StackTrace}");
+        }
     }
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -114,6 +146,8 @@ public partial class MainWindow : Window
 
     private void ComboSkuType_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (TxtNfcStatus == null || TxtStatus == null) return;
+
         if (ComboSkuType.SelectedItem is ComboBoxItem item)
         {
             bool isEnterprise = item.Content.ToString()?.Contains("Enterprise") == true;
