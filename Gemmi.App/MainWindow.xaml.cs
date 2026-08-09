@@ -22,7 +22,7 @@ public partial class MainWindow : Window
     private readonly VisionStreamIngest _visionIngest = new();
     private readonly SpontaneousInitiationEvaluator _spontaneousEval = new();
     private readonly ScreenCodeMonitor _codeMonitor = new();
-    private readonly SpeechSynthesisEngine _speechSynth = new();
+    private SpeechSynthesisEngine? _speechSynth;
     private readonly NetBirdMeshSync _meshSync = new();
     private readonly CancellationTokenSource _cts = new();
 
@@ -35,6 +35,15 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        try
+        {
+            _speechSynth = new SpeechSynthesisEngine();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Speech Synthesizer Inactive]: {ex.Message}");
+        }
+
         _hal.InitializeNodeHardware(_state);
         TxtAlertsLog.Text = $"[System Started] Gemmi Engine v1.0.0 Pro Initialized on Node '{_state.Telemetry.NodeId}'.\n24/7 Asynchronous Second Brain online.\n";
 
@@ -87,9 +96,16 @@ public partial class MainWindow : Window
     private async void BtnSpeakOutLoud_Click(object sender, RoutedEventArgs e)
     {
         string textToSpeak = "Hey John, Gemmi Second Brain is online and running locally on your Deep Horizon hardware node!";
-        TxtStatus.Text = $"Speaking out loud: '{textToSpeak}'...";
-        await _speechSynth.SpeakAsync(textToSpeak, _state);
-        TxtStatus.Text = "Neural Speech Output Complete";
+        if (_speechSynth != null)
+        {
+            TxtStatus.Text = $"Speaking out loud: '{textToSpeak}'...";
+            await _speechSynth.SpeakAsync(textToSpeak, _state);
+            TxtStatus.Text = "Neural Speech Output Complete";
+        }
+        else
+        {
+            MessageBox.Show($"Speech Output Unavailable: SAPI Speech engine could not be initialized.\nText: '{textToSpeak}'", "Speech Synthesizer Inactive", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void ComboSkuType_SelectionChanged(object sender, SelectionChangedEventArgs e)

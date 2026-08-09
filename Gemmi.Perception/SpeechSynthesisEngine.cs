@@ -13,9 +13,16 @@ public class SpeechSynthesisEngine
 
     public SpeechSynthesisEngine()
     {
-        _synth.SetOutputToDefaultAudioDevice();
-        _synth.Rate = 1;  // Natural speaking rate
-        _synth.Volume = 100;
+        try
+        {
+            _synth.SetOutputToDefaultAudioDevice();
+            _synth.Rate = 1;  // Natural speaking rate
+            _synth.Volume = 100;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SpeechSynthesizer Init Warning]: {ex.Message}");
+        }
     }
 
     public async Task SpeakAsync(string text, GemmiState state)
