@@ -1,0 +1,28 @@
+## GitHub Linguist Overrides - Force 100% C# Language Bar Recognition
+*.xaml linguist-detectable=false
+*.ps1 linguist-vendored=true
+*.py linguist-vendored=true
+*.sh linguist-vendored=true
+*.yml linguist-vendored=true
+*.md linguist-documentation=true
+
+## Build & Binary Artifacts
+bin/
+obj/
+[B|b]in/
+[O|o]bj/
+Debug/
+Release/
+x64/
+x86/
+ARM64/
+publish/
+*.zip
+*.deb
+
+## User & IDE Artifacts
+*.user
+*.suo
+.vs/
+.idea/
+*.log

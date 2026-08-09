@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Gemmi.App/Gemmi.App.csproj" />
+  <Project Path="Gemmi.Core/Gemmi.Core.csproj" />
+  <Project Path="Gemmi.Diagnostics/Gemmi.Diagnostics.csproj" />
+  <Project Path="Gemmi.Hardware/Gemmi.Hardware.csproj" />
+  <Project Path="Gemmi.Perception/Gemmi.Perception.csproj" />
+</Solution>

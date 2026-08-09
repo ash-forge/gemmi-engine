@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Gemmi.Core\Gemmi.Core.csproj" />
+    <ProjectReference Include="..\Gemmi.Perception\Gemmi.Perception.csproj" />
+    <ProjectReference Include="..\Gemmi.Hardware\Gemmi.Hardware.csproj" />
+    <ProjectReference Include="..\Gemmi.Diagnostics\Gemmi.Diagnostics.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>

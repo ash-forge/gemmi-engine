@@ -1,0 +1,223 @@
+<Window x:Class="Gemmi.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="⬡ Gemmi Engine v1.0.0 Pro — Second Brain Control Panel" 
+        Height="760" Width="1280" MinHeight="680" MinWidth="1024"
+        WindowStartupLocation="CenterScreen" Background="#0A0D14" Foreground="White">
+
+    <Window.Resources>
+        <!-- Dark Studio Palette -->
+        <SolidColorBrush x:Key="BrushMainBg" Color="#0A0D14"/>
+        <SolidColorBrush x:Key="BrushPanelBg" Color="#121722"/>
+        <SolidColorBrush x:Key="BrushPrimaryAccent" Color="#8B5CF6"/>
+        <SolidColorBrush x:Key="BrushSecondaryAccent" Color="#06B6D4"/>
+        <SolidColorBrush x:Key="BrushBorder" Color="#1F293D"/>
+
+        <!-- Custom Dark TabControl Style -->
+        <Style TargetType="TabItem">
+            <Setter Property="HeaderTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" FontSize="13" FontWeight="Bold" Padding="12,8"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="Foreground" Value="#9CA3AF"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+    </Window.Resources>
+
+    <Border BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1" Margin="10" CornerRadius="8" Background="{DynamicResource BrushMainBg}">
+        <Grid Margin="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- HEADER BAR -->
+            <Border Grid.Row="0" Background="{DynamicResource BrushPanelBg}" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
+                <Grid>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⬡ Gemmi Engine v1.0.0 Pro" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource BrushPrimaryAccent}"/>
+                        <TextBlock Text="— 24/7 Asynchronous Second Brain &amp; Deep Horizon Node Control" FontSize="13" Foreground="#9CA3AF" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Border Background="#10B981" CornerRadius="4" Padding="8,4" Margin="0,0,8,0">
+                            <TextBlock Text="● NetBird Mesh Active (mesh.barrer.net)" FontSize="11" FontWeight="Bold" Foreground="White"/>
+                        </Border>
+                        <Border Background="{DynamicResource BrushSecondaryAccent}" CornerRadius="4" Padding="8,4">
+                            <TextBlock Text="⚡ Deep Horizon HAL Online" FontSize="11" FontWeight="Bold" Foreground="White"/>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- MAIN TAB NAVIGATION -->
+            <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
+                <!-- TAB 1: 🎙️ AMBIENT PERCEPTION & SECOND BRAIN TELEMETRY -->
+                <TabItem Header="🎙️ Ambient Perception &amp; Second Brain">
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="420"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- LEFT: GAUGES & CONTROLS -->
+                        <Border Grid.Column="0" Background="{DynamicResource BrushPanelBg}" CornerRadius="8" Padding="14" Margin="0,0,6,0">
+                            <StackPanel>
+                                <TextBlock Text="🎙️ 24/7 Ambient Perception Engines" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushPrimaryAccent}" Margin="0,0,0,12"/>
+
+                                <Border Background="{DynamicResource BrushMainBg}" CornerRadius="6" Padding="12" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Continuous Audio VAD Stream:" FontSize="12" Foreground="#9CA3AF" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtAudioVadStatus" Text="● VAD Active (Listening ambiently)" FontSize="13" FontWeight="Bold" Foreground="#10B981"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource BrushMainBg}" CornerRadius="6" Padding="12" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Camera / Desktop Vision Frame Stream:" FontSize="12" Foreground="#9CA3AF" Margin="0,0,0,4"/>
+                                        <TextBlock x:Name="TxtVisionStatus" Text="● Vision Active (2 FPS Sampling)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource BrushSecondaryAccent}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource BrushMainBg}" CornerRadius="6" Padding="12" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <TextBlock Text="Spontaneous Initiation Trigger Score (θ > 0.85):" FontSize="12" Foreground="#9CA3AF" Margin="0,0,0,4"/>
+                                        <ProgressBar x:Name="ProgSpontaneousScore" Height="14" Minimum="0" Maximum="1.0" Value="0.42" Foreground="{DynamicResource BrushPrimaryAccent}" Background="#1F293D" Margin="0,0,0,6"/>
+                                        <TextBlock x:Name="TxtSpontaneousScore" Text="Current Initiation Score: 0.42" FontSize="12" Foreground="White" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Button Content="⚡ Trigger Manual Vocal Alert Test" Click="BtnTestVocalAlert_Click" Padding="12,10" Background="{DynamicResource BrushPrimaryAccent}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- RIGHT: SPONTANEOUS ALERTS LOG -->
+                        <Border Grid.Column="1" Background="{DynamicResource BrushPanelBg}" CornerRadius="8" Padding="14" Margin="6,0,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Text="🤖 Spontaneous Vocal Alerts &amp; Diagnostic Telemetry Log" FontSize="15" FontWeight="Bold" Foreground="#10B981" Margin="0,0,0,10"/>
+                                <TextBox Grid.Row="1" x:Name="TxtAlertsLog" IsReadOnly="True" TextWrapping="Wrap" Background="{DynamicResource BrushMainBg}" Foreground="#10B981" FontFamily="Consolas" FontSize="12" Padding="10" BorderBrush="{DynamicResource BrushBorder}"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- TAB 2: 🎛️ DEEP HORIZON HAL & NFC BADGE ROAMING -->
+                <TabItem Header="🎛️ Deep Horizon Node &amp; NFC Roaming">
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="460"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Background="{DynamicResource BrushPanelBg}" CornerRadius="8" Padding="14" Margin="0,0,6,0">
+                            <StackPanel>
+                                <TextBlock Text="🎛️ Deep Horizon Hardware Settings" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushSecondaryAccent}" Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Hardware SKU Type:" FontSize="12" Foreground="#9CA3AF" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="ComboSkuType" SelectionChanged="ComboSkuType_SelectionChanged" Padding="8" Background="{DynamicResource BrushMainBg}" Foreground="White" BorderBrush="{DynamicResource BrushBorder}" Margin="0,0,0,14">
+                                    <ComboBoxItem Content="Consumer Desktop Node ($400-$600 Sweetspot)" IsSelected="True"/>
+                                    <ComboBoxItem Content="Enterprise Google Internal Node (NFC + Headset DAC)"/>
+                                </ComboBox>
+
+                                <Border Background="{DynamicResource BrushMainBg}" CornerRadius="6" Padding="14" Margin="0,0,0,14">
+                                    <StackPanel>
+                                        <TextBlock Text="💳 1-Tap NFC Employee Badge Roaming Simulation" FontSize="13" FontWeight="Bold" Foreground="#EC4899" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Simulate tapping your Google employee badge on node's NFC reader:" FontSize="11" Foreground="#9CA3AF" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                                        <Button Content="💳 Tap NFC Employee Badge" Click="BtnTapNfcBadge_Click" Padding="12,10" Background="#EC4899" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" Margin="0,0,0,10"/>
+                                        <TextBlock x:Name="TxtNfcStatus" Text="Active Badge User: Unauthenticated" FontSize="12" Foreground="White"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Button Content="🌐 Hydrate Gemmi State over NetBird Mesh" Click="BtnSyncMesh_Click" Padding="12,10" Background="#10B981" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="{DynamicResource BrushPanelBg}" CornerRadius="8" Padding="14" Margin="6,0,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Text="🌐 Dual-Node NetBird Mesh Hydration Telemetry" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushSecondaryAccent}" Margin="0,0,0,10"/>
+                                <TextBox Grid.Row="1" x:Name="TxtMeshLog" IsReadOnly="True" TextWrapping="Wrap" Background="{DynamicResource BrushMainBg}" Foreground="{DynamicResource BrushSecondaryAccent}" FontFamily="Consolas" FontSize="12" Padding="10" BorderBrush="{DynamicResource BrushBorder}"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- TAB 3: 🔬 JTAG / UART HIL DIAGNOSTIC ENGINE -->
+                <TabItem Header="🔬 JTAG HIL Diagnostic Testing">
+                    <Grid Margin="0,10,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Background="{DynamicResource BrushPanelBg}" CornerRadius="8" Padding="14" Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="⚡ Run 100 Cold-Boot Stress Cycles" Click="BtnRunHilStress_Click" Padding="12,8" Background="{DynamicResource BrushPrimaryAccent}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                                <TextBlock Text="Node Target Revision:" FontSize="12" Foreground="#9CA3AF" VerticalAlignment="Center" Margin="16,0,6,0"/>
+                                <ComboBox x:Name="ComboNodeRev" Padding="6" Background="{DynamicResource BrushMainBg}" Foreground="White" BorderBrush="{DynamicResource BrushBorder}">
+                                    <ComboBoxItem Content="Rev 1 Baseline"/>
+                                    <ComboBoxItem Content="Rev 2 High-Density"/>
+                                    <ComboBoxItem Content="Rev 3 Next-Gen Silicon" IsSelected="True"/>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <DataGrid Grid.Row="1" x:Name="GridHilMilestones" AutoGenerateColumns="False" IsReadOnly="True" 
+                                  Background="{DynamicResource BrushMainBg}" Foreground="White" RowBackground="{DynamicResource BrushMainBg}" 
+                                  AlternatingRowBackground="#121620" BorderBrush="{DynamicResource BrushBorder}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Hardware Milestone / Signal" Binding="{Binding MilestoneName}" Width="380"/>
+                                <DataGridTextColumn Header="Timestamp (ms)" Binding="{Binding TimestampMs, StringFormat={}{0:F2}}" Width="180"/>
+                                <DataGridTextColumn Header="Logic Analyzer Status" Binding="{Binding Status}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </TabItem>
+
+                <!-- TAB 4: 🎨 INTERACTIVE DIGITAL WHITEBOARD CANVAS -->
+                <TabItem Header="🎨 Interactive Digital Whiteboard">
+                    <Grid Margin="0,10,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Background="{DynamicResource BrushPanelBg}" CornerRadius="8" Padding="14" Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🎨 Render Collaborative Whiteboard Diagram" Click="BtnRenderWhiteboard_Click" Padding="12,8" Background="{DynamicResource BrushPrimaryAccent}" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+                                <Button Content="📤 Export Architecture to ModelStudio IDE" Click="BtnExportModelStudio_Click" Padding="12,8" Background="#10B981" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand" Margin="10,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="1" Background="{DynamicResource BrushMainBg}" CornerRadius="8" Padding="10" BorderBrush="{DynamicResource BrushBorder}">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                                <Canvas x:Name="CanvasWhiteboard" Width="2200" Height="650" Background="#090C12"/>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+            <!-- FOOTER STATUS BAR -->
+            <Border Grid.Row="2" Background="{DynamicResource BrushPanelBg}" CornerRadius="6" Padding="12,8" Margin="0,12,0,0">
+                <Grid>
+                    <TextBlock x:Name="TxtStatus" Text="Ready — Gemmi Engine v1.0.0 Pro" FontSize="12" Foreground="#9CA3AF"/>
+                    <TextBlock Text="Barrer Software © 2026" FontSize="12" Foreground="#6B7280" HorizontalAlignment="Right"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</Window>
