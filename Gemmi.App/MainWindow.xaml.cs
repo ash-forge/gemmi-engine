@@ -21,6 +21,8 @@ public partial class MainWindow : Window
     private readonly AudioVadEngine _audioVad = new();
     private readonly VisionStreamIngest _visionIngest = new();
     private readonly SpontaneousInitiationEvaluator _spontaneousEval = new();
+    private readonly ScreenCodeMonitor _codeMonitor = new();
+    private readonly SpeechSynthesisEngine _speechSynth = new();
     private readonly NetBirdMeshSync _meshSync = new();
     private readonly CancellationTokenSource _cts = new();
 
@@ -40,10 +42,17 @@ public partial class MainWindow : Window
         _ = Task.Run(() => _audioVad.StartVadLoopAsync(_state, _cts.Token));
         _ = Task.Run(() => _visionIngest.StartVisionLoopAsync(_state, _cts.Token));
         _ = Task.Run(() => _spontaneousEval.StartSpontaneousEvaluatorLoopAsync(_state, OnSpontaneousInitiated, _cts.Token));
+        _ = Task.Run(() => _codeMonitor.StartCodeMonitorLoopAsync(_state, OnActiveIdeDetected, _cts.Token));
 
-        // Load initial HIL milestones
+        // Load initial HIL milestones, sensors, and mesh nodes
         var milestones = JtagUartProfiler.CaptureBootProfile("Rev 3");
         GridHilMilestones.ItemsSource = milestones;
+
+        var sensors = HardwareSensorGateway.ScanHardwareSensors();
+        GridHardwareSensors.ItemsSource = sensors;
+
+        var nodes = await MeshAutoDiscovery.ScanNetBirdMeshAsync();
+        GridMeshNodes.ItemsSource = nodes;
     }
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -60,11 +69,27 @@ public partial class MainWindow : Window
         });
     }
 
+    private void OnActiveIdeDetected(string ideInfo)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            TxtAlertsLog.Text += $"{DateTime.Now:HH:mm:ss} - {ideInfo}\n";
+        });
+    }
+
     private void BtnTestVocalAlert_Click(object sender, RoutedEventArgs e)
     {
         string msg = $"[Manual Vocal Alert] Hey John, I just verified the LPDDR5X RAM training latency on Rev 3 is down to 0.31s!";
         TxtAlertsLog.Text += $"{DateTime.Now:HH:mm:ss} - {msg}\n";
         TxtStatus.Text = msg;
+    }
+
+    private async void BtnSpeakOutLoud_Click(object sender, RoutedEventArgs e)
+    {
+        string textToSpeak = "Hey John, Gemmi Second Brain is online and running locally on your Deep Horizon hardware node!";
+        TxtStatus.Text = $"Speaking out loud: '{textToSpeak}'...";
+        await _speechSynth.SpeakAsync(textToSpeak, _state);
+        TxtStatus.Text = "Neural Speech Output Complete";
     }
 
     private void ComboSkuType_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -108,6 +133,21 @@ public partial class MainWindow : Window
         GridHilMilestones.ItemsSource = profile;
         TxtStatus.Text = $"Completed 100 boot stress cycles for {revKey}. Average boot time: {results[0].TotalBootTimeMs:F1}ms";
         MessageBox.Show($"Completed 100 cold-boot stress cycles for {revKey}.\nTotal Startup Latency: {results[0].TotalBootTimeMs:F1} ms (100% Passed)", "HIL Stress Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void BtnScanHardwareSensors_Click(object sender, RoutedEventArgs e)
+    {
+        var sensors = HardwareSensorGateway.ScanHardwareSensors();
+        GridHardwareSensors.ItemsSource = sensors;
+        TxtStatus.Text = $"Scanned {sensors.Count} hardware sensors & serial buses";
+    }
+
+    private async void BtnScanMeshNodes_Click(object sender, RoutedEventArgs e)
+    {
+        TxtStatus.Text = "Scanning NetBird private overlay mesh (mesh.barrer.net)...";
+        var nodes = await MeshAutoDiscovery.ScanNetBirdMeshAsync();
+        GridMeshNodes.ItemsSource = nodes;
+        TxtStatus.Text = $"Discovered {nodes.Count} active nodes on NetBird mesh";
     }
 
     private void BtnRenderWhiteboard_Click(object sender, RoutedEventArgs e)
