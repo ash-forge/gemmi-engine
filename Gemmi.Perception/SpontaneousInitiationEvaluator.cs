@@ -8,12 +8,13 @@ namespace Gemmi.Perception;
 public class SpontaneousInitiationEvaluator
 {
     public double Threshold { get; set; } = 0.85;
+    private readonly LocalLlamaInferenceEngine _llamaEngine = new();
 
     public async Task StartSpontaneousEvaluatorLoopAsync(GemmiState state, Action<string> onSpontaneousInitiate, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            await Task.Delay(1000, cancellationToken);
+            await Task.Delay(5000, cancellationToken);
 
             // Compute spontaneous score based on background diagnostic results & events
             double currentScore = Random.Shared.NextDouble();
@@ -21,7 +22,9 @@ public class SpontaneousInitiationEvaluator
 
             if (currentScore > Threshold)
             {
-                string alertMsg = $"[Spontaneous Initiation] Hey John, I just finished running 100 HIL boot stress cycles on Rev 3. All 10 C# bug patches are verified green!";
+                string activeWindowContext = state.Perception.AudioVadActive ? "User speaking via microphone" : "Monitoring active workspace & code editor";
+                string alertMsg = await _llamaEngine.GenerateSpontaneousAlertAsync(state, activeWindowContext);
+                
                 state.RecentSpontaneousAlerts.Add($"{DateTime.Now:HH:mm:ss} - {alertMsg}");
                 onSpontaneousInitiate(alertMsg);
             }

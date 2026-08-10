@@ -82,6 +82,7 @@ public partial class MainWindow : Window
             _ = Task.Run(() => _visionIngest.StartVisionLoopAsync(_state, _cts.Token));
             _ = Task.Run(() => _spontaneousEval.StartSpontaneousEvaluatorLoopAsync(_state, OnSpontaneousInitiated, _cts.Token));
             _ = Task.Run(() => _codeMonitor.StartCodeMonitorLoopAsync(_state, OnActiveIdeDetected, _cts.Token));
+            _meshSync.StartMeshListener(_state, OnMeshStateReceived, _cts.Token);
 
             var milestones = JtagUartProfiler.CaptureBootProfile("Rev 3");
             GridHilMilestones.ItemsSource = milestones;
@@ -107,10 +108,17 @@ public partial class MainWindow : Window
 
     private void OnSpontaneousInitiated(string alert)
     {
-        Dispatcher.Invoke(() =>
+        Dispatcher.Invoke(async () =>
         {
             TxtAlertsLog.Text += $"{alert}\n";
             TxtStatus.Text = alert;
+            ProgSpontaneousScore.Value = _state.Perception.SpontaneousInitiationScore;
+            TxtSpontaneousScore.Text = $"Current Initiation Score: {_state.Perception.SpontaneousInitiationScore:F3}";
+
+            if (_speechSynth != null && !string.IsNullOrWhiteSpace(alert))
+            {
+                await _speechSynth.SpeakAsync(alert, _state);
+            }
         });
     }
 
@@ -120,6 +128,49 @@ public partial class MainWindow : Window
         {
             TxtAlertsLog.Text += $"{DateTime.Now:HH:mm:ss} - {ideInfo}\n";
         });
+    }
+
+    private void OnMeshStateReceived(string meshInfo)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            TxtAlertsLog.Text += $"{DateTime.Now:HH:mm:ss} - {meshInfo}\n";
+            TxtMeshLog.Text += $"{DateTime.Now:HH:mm:ss} - {meshInfo}\n";
+        });
+    }
+
+    private async void BtnSendUserPrompt_Click(object sender, RoutedEventArgs e)
+    {
+        await SendUserPromptAsync();
+    }
+
+    private async void TxtUserPrompt_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Enter)
+        {
+            await SendUserPromptAsync();
+        }
+    }
+
+    private async Task SendUserPromptAsync()
+    {
+        string prompt = TxtUserPrompt.Text.Trim();
+        if (string.IsNullOrEmpty(prompt)) return;
+
+        TxtUserPrompt.Text = "";
+        TxtAlertsLog.Text += $"{DateTime.Now:HH:mm:ss} - User: {prompt}\n";
+        TxtStatus.Text = "Querying local Llama GGUF brain (port 11436)...";
+
+        var llama = new LocalLlamaInferenceEngine();
+        string response = await llama.GenerateSpontaneousAlertAsync(_state, $"User asked: '{prompt}'");
+
+        TxtAlertsLog.Text += $"{DateTime.Now:HH:mm:ss} - Gemmi: {response}\n\n";
+        TxtStatus.Text = "Gemmi Second Brain Response Received";
+
+        if (_speechSynth != null)
+        {
+            await _speechSynth.SpeakAsync(response, _state);
+        }
     }
 
     private void BtnTestVocalAlert_Click(object sender, RoutedEventArgs e)
