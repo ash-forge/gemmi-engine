@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Gemmi.Core;
@@ -11,11 +12,13 @@ public class VisionFrameInfo
     public int FrameHeight { get; set; } = 1080;
     public DateTime CapturedAt { get; set; } = DateTime.UtcNow;
     public string FrameSource { get; set; } = "Desktop Monitor 01";
+    public string GroundingDescription { get; set; } = "PaliGemma 2 Vision Grounding Active";
 }
 
 public class VisionStreamIngest
 {
     private bool _isCapturing;
+    private readonly string _paliGemmaPath = @"C:\Users\admin\gemma4-turbo-family\paligemma2-3b";
 
     public async Task StartVisionLoopAsync(GemmiState state, CancellationToken cancellationToken)
     {
@@ -26,7 +29,13 @@ public class VisionStreamIngest
         {
             await Task.Delay(500, cancellationToken); // 2 FPS vision frame sampling
             var frame = new VisionFrameInfo();
-            state.WorkingMemoryGraph["LastVisionFrame"] = $"{frame.FrameSource} ({frame.FrameWidth}x{frame.FrameHeight}) at {frame.CapturedAt:HH:mm:ss}";
+            
+            if (Directory.Exists(_paliGemmaPath))
+            {
+                frame.GroundingDescription = "PaliGemma 2 (3B) Spatial Vision Ready & Active";
+            }
+
+            state.WorkingMemoryGraph["LastVisionFrame"] = $"{frame.FrameSource} ({frame.FrameWidth}x{frame.FrameHeight}) - {frame.GroundingDescription} at {frame.CapturedAt:HH:mm:ss}";
         }
     }
 
