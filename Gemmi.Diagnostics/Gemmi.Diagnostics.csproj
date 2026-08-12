@@ -8,7 +8,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <StartupObject>Gemmi.Scratch.Step4HardwareModelTest</StartupObject>
+    <StartupObject>Gemmi.Scratch.Step5OhShinyEvaluatorTest</StartupObject>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
