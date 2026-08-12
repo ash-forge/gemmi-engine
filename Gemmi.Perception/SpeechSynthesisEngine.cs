@@ -32,6 +32,13 @@ public class SpeechSynthesisEngine
     {
         state.Perception.LastObservedContext = $"Speaking out loud: '{text}'";
         
+        // Push Voice Synthesis Event into RAM Working Memory Buffer
+        state.MemoryBuffer.AddObservation(
+            MemoryCategory.Voice, 
+            $"Gemmi Neural Voice Spoke: '{text}'", 
+            salienceScore: 0.85f
+        );
+        
         bool neuralSpeechSuccess = false;
         if (Directory.Exists(_t5GemmaPath))
         {

@@ -36,6 +36,13 @@ public class VisionStreamIngest
             }
 
             state.WorkingMemoryGraph["LastVisionFrame"] = $"{frame.FrameSource} ({frame.FrameWidth}x{frame.FrameHeight}) - {frame.GroundingDescription} at {frame.CapturedAt:HH:mm:ss}";
+            
+            // Push Spatial Vision Observation directly into Working Memory Buffer
+            state.MemoryBuffer.AddObservation(
+                MemoryCategory.Vision, 
+                $"PaliGemma 2 Grounding ({frame.FrameSource}): {frame.GroundingDescription}", 
+                salienceScore: 0.82f
+            );
         }
     }
 

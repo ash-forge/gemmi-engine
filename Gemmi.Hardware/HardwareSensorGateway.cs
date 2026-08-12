@@ -27,4 +27,17 @@ public class HardwareSensorGateway
             new HardwareSensorTelemetry { SensorName = "NFC Antenna RSSI", PortName = "SPI 0", SensorValue = -42.0, Unit = "dBm" }
         };
     }
+
+    public static void PushTelemetryToMemory(GemmiState state)
+    {
+        var sensors = ScanHardwareSensors();
+        foreach (var s in sensors)
+        {
+            state.MemoryBuffer.AddObservation(
+                MemoryCategory.System,
+                $"Deep Horizon Hardware Sensor ({s.SensorName}): {s.SensorValue} {s.Unit} via {s.PortName}",
+                salienceScore: 0.50f
+            );
+        }
+    }
 }
