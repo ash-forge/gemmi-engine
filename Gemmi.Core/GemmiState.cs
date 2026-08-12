@@ -39,4 +39,15 @@ public class GemmiState
     public PerceptionStreamState Perception { get; set; } = new();
     public List<string> RecentSpontaneousAlerts { get; set; } = new();
     public Dictionary<string, string> WorkingMemoryGraph { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    // High-Speed Memory Engine Components
+    public WorkingMemoryBuffer MemoryBuffer { get; } = new(1000);
+    public EpisodicMemoryGraph MemoryGraph { get; } = new();
+    public MemoryQueryEngine MemoryQuery { get; }
+    public AsyncMemoryStore MemoryStore { get; } = new();
+
+    public GemmiState()
+    {
+        MemoryQuery = new MemoryQueryEngine(MemoryBuffer, MemoryGraph);
+    }
 }

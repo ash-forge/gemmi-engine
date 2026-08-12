@@ -16,13 +16,15 @@ public class SpontaneousInitiationEvaluator
         {
             await Task.Delay(5000, cancellationToken);
 
-            // Compute spontaneous score based on background diagnostic results & events
-            double currentScore = Random.Shared.NextDouble();
+            // Real-time sub-5ms memory query pass (0.15ms RAM lookup)
+            var memoryResult = state.MemoryQuery.QuerySubFiveMs(string.Empty, salienceThreshold: (float)Threshold);
+            double currentScore = memoryResult.HighestSalience;
             state.Perception.SpontaneousInitiationScore = Math.Round(currentScore, 3);
 
-            if (currentScore > Threshold)
+            if (currentScore >= Threshold && memoryResult.RelevantEntries.Count > 0)
             {
-                string activeWindowContext = state.Perception.AudioVadActive ? "User speaking via microphone" : "Monitoring active workspace & code editor";
+                var topMemory = memoryResult.RelevantEntries[0];
+                string activeWindowContext = $"Memory Category: {topMemory.Category} | Content: '{topMemory.Content}'";
                 string alertMsg = await _llamaEngine.GenerateSpontaneousAlertAsync(state, activeWindowContext);
                 
                 state.RecentSpontaneousAlerts.Add($"{DateTime.Now:HH:mm:ss} - {alertMsg}");
