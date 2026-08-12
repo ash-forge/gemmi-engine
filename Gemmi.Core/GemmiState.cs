@@ -22,6 +22,20 @@ public class NodeTelemetry
     public bool NetBirdMeshConnected { get; set; } = true;
 }
 
+public enum VoiceGenderPreference
+{
+    Female, // Default smooth, calm lab co-pilot
+    Male,   // Smooth Jarvis-style persona
+    Neutral
+}
+
+public class VoiceSettings
+{
+    public VoiceGenderPreference Gender { get; set; } = VoiceGenderPreference.Female; // Default: Smooth Female Voice
+    public int SpeakingRate { get; set; } = 1;
+    public int Volume { get; set; } = 100;
+}
+
 public class PerceptionStreamState
 {
     public bool AudioVadActive { get; set; } = true;
@@ -37,6 +51,7 @@ public class GemmiState
     public DateTime SessionStartTime { get; set; } = DateTime.UtcNow;
     public NodeTelemetry Telemetry { get; set; } = new();
     public PerceptionStreamState Perception { get; set; } = new();
+    public VoiceSettings Voice { get; set; } = new();
     public List<string> RecentSpontaneousAlerts { get; set; } = new();
     public Dictionary<string, string> WorkingMemoryGraph { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

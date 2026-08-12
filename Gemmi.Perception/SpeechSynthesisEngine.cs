@@ -51,6 +51,17 @@ public class SpeechSynthesisEngine
             {
                 try
                 {
+                    if (state.Voice.Gender == VoiceGenderPreference.Female)
+                    {
+                        _synth.SelectVoiceByHints(VoiceGender.Female);
+                    }
+                    else if (state.Voice.Gender == VoiceGenderPreference.Male)
+                    {
+                        _synth.SelectVoiceByHints(VoiceGender.Male);
+                    }
+
+                    _synth.Rate = state.Voice.SpeakingRate;
+                    _synth.Volume = state.Voice.Volume;
                     _synth.Speak(text);
                 }
                 catch (Exception ex)
