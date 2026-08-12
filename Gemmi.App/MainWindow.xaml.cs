@@ -303,4 +303,42 @@ public partial class MainWindow : Window
         MessageBox.Show("Exported Whiteboard Architecture Diagram directly into C# Project format for ModelStudio IDE!", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
         TxtStatus.Text = "Exported architecture to ModelStudio IDE";
     }
+
+    private void BtnSaveUserProfile_Click(object sender, RoutedEventArgs e)
+    {
+        string newName = TxtProfileUserName.Text.Trim();
+        string newRole = TxtProfileRoleTitle.Text.Trim();
+
+        if (!string.IsNullOrWhiteSpace(newName))
+        {
+            _state.User.UserName = newName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(newRole))
+        {
+            _state.User.RoleTitle = newRole;
+        }
+
+        if (ComboVoiceGenderSettings.SelectedItem is ComboBoxItem item)
+        {
+            string content = item.Content.ToString() ?? "";
+            if (content.Contains("Male"))
+            {
+                _state.Voice.Gender = VoiceGenderPreference.Male;
+            }
+            else if (content.Contains("Neutral"))
+            {
+                _state.Voice.Gender = VoiceGenderPreference.Neutral;
+            }
+            else
+            {
+                _state.Voice.Gender = VoiceGenderPreference.Female;
+            }
+        }
+
+        TxtProfileActiveSummary.Text = $"Active User: {_state.User.UserName} ({_state.User.RoleTitle})\nVoice Persona: {_state.Voice.Gender} Voice\nState Configured & Saved Live";
+        TxtStatus.Text = $"User Profile Updated: Welcome, {_state.User.UserName}!";
+
+        MessageBox.Show($"Profile Saved!\nDisplay Name: {_state.User.UserName}\nRole: {_state.User.RoleTitle}\nVoice Persona: {_state.Voice.Gender} Voice", "Gemmi User Settings Updated", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
 }
