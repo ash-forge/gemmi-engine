@@ -67,6 +67,7 @@ public class GemmiState
     public EpisodicMemoryGraph MemoryGraph { get; } = new();
     public MemoryQueryEngine MemoryQuery { get; }
     public AsyncMemoryStore MemoryStore { get; } = new();
+    public BinaryMemoryStore BinaryStore { get; } = new();
 
     public GemmiState()
     {
