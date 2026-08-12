@@ -48,7 +48,7 @@ public class Step5OhShinyEvaluatorTest
 
         // 3. Inject Brand-New Novel Observation (Triggers Dopamine Novelty Spike +0.30!)
         Console.WriteLine("\n[+] Injecting Brand-New Novel Memory ('NFC Badge Scanner Activated')...");
-        state.MemoryBuffer.AddObservation(MemoryCategory.System, "NFC Badge Scanner Activated: John (L8 Principal Architect)", salienceScore: 0.70f);
+        state.MemoryBuffer.AddObservation(MemoryCategory.System, $"NFC Badge Scanner Activated: {state.User.UserName} ({state.User.RoleTitle})", salienceScore: 0.70f);
         await Task.Delay(3500);
 
         // 4. Inject another observation to trigger potential 'Oh Shiny!' random walk

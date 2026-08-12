@@ -21,7 +21,7 @@ public class Step4HardwareModelTest
         state.Telemetry.CpuTemperatureC = 44.2;
         state.Telemetry.TpuUsagePercent = 24.8;
         state.Telemetry.NetBirdMeshConnected = true;
-        state.Telemetry.ActiveNfcBadgeUser = "John (L8 Principal Architect)";
+        state.Telemetry.ActiveNfcBadgeUser = $"{state.User.UserName} ({state.User.RoleTitle})";
 
         HardwareSensorGateway.PushTelemetryToMemory(state);
         sw.Stop();

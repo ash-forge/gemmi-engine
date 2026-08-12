@@ -36,6 +36,12 @@ public class VoiceSettings
     public int Volume { get; set; } = 100;
 }
 
+public class UserProfile
+{
+    public string UserName { get; set; } = "Daniel";
+    public string RoleTitle { get; set; } = "L8 Principal Architect / DeepMind Lead";
+}
+
 public class PerceptionStreamState
 {
     public bool AudioVadActive { get; set; } = true;
@@ -52,6 +58,7 @@ public class GemmiState
     public NodeTelemetry Telemetry { get; set; } = new();
     public PerceptionStreamState Perception { get; set; } = new();
     public VoiceSettings Voice { get; set; } = new();
+    public UserProfile User { get; set; } = new();
     public List<string> RecentSpontaneousAlerts { get; set; } = new();
     public Dictionary<string, string> WorkingMemoryGraph { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

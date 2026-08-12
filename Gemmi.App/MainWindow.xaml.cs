@@ -175,14 +175,14 @@ public partial class MainWindow : Window
 
     private void BtnTestVocalAlert_Click(object sender, RoutedEventArgs e)
     {
-        string msg = $"[Manual Vocal Alert] Hey John, I just verified the LPDDR5X RAM training latency on Rev 3 is down to 0.31s!";
+        string msg = $"[Manual Vocal Alert] Hey Daniel, I just verified the LPDDR5X RAM training latency on Rev 3 is down to 0.31s!";
         TxtAlertsLog.Text += $"{DateTime.Now:HH:mm:ss} - {msg}\n";
         TxtStatus.Text = msg;
     }
 
     private async void BtnSpeakOutLoud_Click(object sender, RoutedEventArgs e)
     {
-        string textToSpeak = "Hey John, Gemmi Second Brain is online and running locally on your Deep Horizon hardware node!";
+        string textToSpeak = $"Hey {_state.User.UserName}, Gemmi Second Brain is online and running locally on your Deep Horizon hardware node!";
         if (_speechSynth != null)
         {
             TxtStatus.Text = $"Speaking out loud: '{textToSpeak}'...";
@@ -212,7 +212,7 @@ public partial class MainWindow : Window
 
     private async void BtnTapNfcBadge_Click(object sender, RoutedEventArgs e)
     {
-        var (success, msg) = await _nfcAuth.OnNfcBadgeTappedAsync("GOOG-884920", "John (DeepMind Lead)", _state);
+        var (success, msg) = await _nfcAuth.OnNfcBadgeTappedAsync("GOOG-884920", $"{_state.User.UserName} ({_state.User.RoleTitle})", _state);
         TxtNfcStatus.Text = $"Active Badge User: {(_state.Telemetry.ActiveNfcBadgeUser)}";
         TxtMeshLog.Text += $"{DateTime.Now:HH:mm:ss} - {msg}\n";
         MessageBox.Show(msg, success ? "NFC Badge Authenticated" : "NFC Unavailable", MessageBoxButton.OK, success ? MessageBoxImage.Information : MessageBoxImage.Warning);

@@ -24,7 +24,7 @@ public class LocalLlamaInferenceEngine
         {
             var systemPrompt = "You are Gemmi, a 24/7 sovereign proactive AI Second Brain running locally on Deep Horizon hardware. " +
                                "You monitor code edits, sub-meter GPS location, ambient audio VAD, and hardware telemetry. " +
-                               "Provide a concise, highly intelligent, 1-2 sentence spontaneous update or insight to the user (John). Be direct and sharp.";
+                               $"Provide a concise, highly intelligent, 1-2 sentence spontaneous update or insight to the user ({state.User.UserName}). Be direct and sharp.";
 
             var userPrompt = $"[Current Node Status]: Node '{state.Telemetry.NodeId}', CPU Temp {state.Telemetry.CpuTemperatureC:F1}°C, Active Badge User '{state.Telemetry.ActiveNfcBadgeUser}'.\n" +
                              $"[Ambient Context]: {ambientContext}\n" +
