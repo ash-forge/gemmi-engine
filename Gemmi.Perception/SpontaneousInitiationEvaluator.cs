@@ -28,6 +28,7 @@ public class SpontaneousInitiationEvaluator
 
     private readonly LocalLlamaInferenceEngine _llamaEngine = new();
     private readonly ConcurrentDictionary<string, DateTime> _refractoryCooldowns = new();
+    private readonly HashSet<string> _seenObservationHashes = new();
     private readonly TimeSpan _cooldownDuration = TimeSpan.FromSeconds(30);
 
     public async Task StartSpontaneousEvaluatorLoopAsync(GemmiState state, Action<string> onSpontaneousInitiate, CancellationToken cancellationToken)
@@ -46,14 +47,43 @@ public class SpontaneousInitiationEvaluator
             double audioWeight = state.Perception.AudioVadActive ? 0.10 : 0.0;
             double memoryWeight = memoryResult.HighestSalience;
 
-            double computedSalienceScore = Math.Min(1.0, memoryWeight + visionWeight + audioWeight);
+            // Dopamine Novelty Spike (+0.30 boost if top memory is brand new)
+            double dopamineBoost = 0.0;
+            if (memoryResult.RelevantEntries.Count > 0)
+            {
+                var topEntry = memoryResult.RelevantEntries[0];
+                if (_seenObservationHashes.Add(topEntry.Content))
+                {
+                    dopamineBoost = 0.30; // Brand new observation trigger!
+                }
+            }
+
+            // 3. Stochastic Associative Graph Leap ("Oh Shiny!" Random Memory Walk)
+            bool isOhShinyLeap = false;
+            string ohShinyContext = string.Empty;
+
+            if (Random.Shared.NextDouble() < 0.15 && memoryResult.RelevantEntries.Count > 0)
+            {
+                var seedMemory = memoryResult.RelevantEntries[Random.Shared.Next(memoryResult.RelevantEntries.Count)];
+                var relatedNodes = state.MemoryGraph.GetRelatedConcepts(seedMemory.Content);
+
+                if (relatedNodes.Count > 0)
+                {
+                    var shinyNode = relatedNodes[Random.Shared.Next(relatedNodes.Count)];
+                    isOhShinyLeap = true;
+                    ohShinyContext = $"[✨ 'OH SHINY!' ASSOCIATIVE LEAP] Connected '{seedMemory.Content}' -> Distant Graph Concept '{shinyNode.Concept}' ({shinyNode.Category})";
+                    dopamineBoost += 0.40; // Associative jump boost!
+                }
+            }
+
+            double computedSalienceScore = Math.Min(1.0, memoryWeight + visionWeight + audioWeight + dopamineBoost);
             state.Perception.SpontaneousInitiationScore = Math.Round(computedSalienceScore, 3);
 
-            // 3. Evaluate Threshold & Refractory Cooldown
+            // 4. Evaluate Threshold & Refractory Cooldown
             if (computedSalienceScore >= targetThreshold && memoryResult.RelevantEntries.Count > 0)
             {
                 var topMemory = memoryResult.RelevantEntries[0];
-                string memoryContentKey = topMemory.Content;
+                string memoryContentKey = isOhShinyLeap ? ohShinyContext : topMemory.Content;
 
                 // Check Refractory Cooldown (prevent duplicate alerts within 30 seconds)
                 if (_refractoryCooldowns.TryGetValue(memoryContentKey, out var lastAlertTime) && (DateTime.UtcNow - lastAlertTime) < _cooldownDuration)
@@ -63,7 +93,10 @@ public class SpontaneousInitiationEvaluator
 
                 _refractoryCooldowns[memoryContentKey] = DateTime.UtcNow;
 
-                string activeContext = $"[Multimodal Salience θ={computedSalienceScore:F2}] Category: {topMemory.Category} | {topMemory.Content}";
+                string activeContext = isOhShinyLeap 
+                    ? $"{ohShinyContext} (θ={computedSalienceScore:F2})" 
+                    : $"[Multimodal Salience θ={computedSalienceScore:F2}] Category: {topMemory.Category} | {topMemory.Content}";
+
                 string alertMsg = await _llamaEngine.GenerateSpontaneousAlertAsync(state, activeContext);
 
                 state.RecentSpontaneousAlerts.Add($"{DateTime.Now:HH:mm:ss} - {alertMsg}");
