@@ -14,7 +14,7 @@ public class LocalLlamaInferenceEngine
 
     public LocalLlamaInferenceEngine(string baseUrl = "http://localhost:11436")
     {
-        _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
         _baseUrl = baseUrl.TrimEnd('/');
     }
 

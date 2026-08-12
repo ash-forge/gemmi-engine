@@ -34,17 +34,17 @@ public class SpontaneousInitiationEvaluator
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            await Task.Delay(3000, cancellationToken); // 3-second cognitive evaluation tick
+            await Task.Delay(1000, cancellationToken); // 1-second cognitive evaluation tick
 
             double targetThreshold = CurrentThreshold;
 
             // 1. Execute Sub-5ms RAM Memory Query Pass (0.15ms execution)
-            var memoryResult = state.MemoryQuery.QuerySubFiveMs(string.Empty, salienceThreshold: (float)targetThreshold);
+            var memoryResult = state.MemoryQuery.QuerySubFiveMs(string.Empty, salienceThreshold: 0.0f);
 
             // 2. Multimodal Salience Weighting Pass
-            double visionWeight = state.Perception.CameraVisionActive ? 0.25 : 0.0;
-            double audioWeight = state.Perception.AudioVadActive ? 0.20 : 0.0;
-            double memoryWeight = memoryResult.HighestSalience * 0.55;
+            double visionWeight = state.Perception.CameraVisionActive ? 0.15 : 0.0;
+            double audioWeight = state.Perception.AudioVadActive ? 0.10 : 0.0;
+            double memoryWeight = memoryResult.HighestSalience;
 
             double computedSalienceScore = Math.Min(1.0, memoryWeight + visionWeight + audioWeight);
             state.Perception.SpontaneousInitiationScore = Math.Round(computedSalienceScore, 3);

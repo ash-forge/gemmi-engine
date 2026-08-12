@@ -1,10 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Gemmi.Core\Gemmi.Core.csproj" />
+    <ProjectReference Include="..\Gemmi.Perception\Gemmi.Perception.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <StartupObject>Gemmi.Scratch.EvaluatorTestHarness</StartupObject>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

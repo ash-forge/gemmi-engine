@@ -33,7 +33,7 @@ public class MemoryQueryEngine
         var pool = category.HasValue ? _buffer.GetByCategory(category.Value) : _buffer.GetRecent(50);
 
         result.RelevantEntries = pool
-            .Where(e => string.IsNullOrEmpty(queryContext) || e.Content.Contains(queryContext, StringComparison.OrdinalIgnoreCase))
+            .Where(e => (string.IsNullOrEmpty(queryContext) || e.Content.Contains(queryContext, StringComparison.OrdinalIgnoreCase)) && e.SalienceScore >= salienceThreshold)
             .OrderByDescending(e => e.SalienceScore)
             .Take(10)
             .ToList();
