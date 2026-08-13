@@ -45,6 +45,10 @@ public class Step8SpatialGraphAndAvatarTest
         Console.WriteLine("\n -> Initial State (Cozy Chair Listening to Lofi Music):");
         Console.WriteLine($"    • Current Activity: {avatar.CurrentActivity}");
         Console.WriteLine($"    • Spine Pose      : {avatar.SpineTransform}");
+        Console.WriteLine($"    • Left Shoulder   : {avatar.LeftArm.Shoulder} (X = +1.85f)");
+        Console.WriteLine($"    • Right Shoulder  : {avatar.RightArm.Shoulder} (X = -1.85f)");
+        var rightElbowWorld = avatar.RightArm.Elbow.ComputeWorldPosition(avatar.RightArm.Shoulder);
+        Console.WriteLine($"    • Right Elbow World Position: {rightElbowWorld} (Holding Coffee)");
 
         Console.WriteLine("\n -> Simulating PaliGemma 2 Spatial Vision Perception (Detecting NullReferenceException)...");
         avatar.OnSpatialVisionPerception("System.NullReferenceException: Object reference not set to an instance of an object at Program.cs:L42", true);
