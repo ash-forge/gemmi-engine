@@ -271,12 +271,15 @@
 
     <div id="sidebar">
         
-        <!-- 3D Avatar Model Selection -->
+        <!-- 3D Avatar Model Selection & Live Network Sync -->
         <div class="panel-section">
-            <div class="panel-title">🧍 3D Companion Avatar Model Selector</div>
+            <div class="panel-title">🧍 3D Avatar & Live Telemetry Server Sync</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <button class="btn active" id="btn-model-person" onclick="switchModel('person')">🧍‍♀️ 3D Person (VRoid)</button>
                 <button class="btn" id="btn-model-sovereign" onclick="switchModel('sovereign')">🤖 Gemmi Mesh V3</button>
+            </div>
+            <div style="margin-top: 8px;">
+                <button class="btn" id="btn-ws-sync" onclick="connectWebSocket()" style="width: 100%;">⚡ Connect 60FPS Telemetry Server (Port 8088)</button>
             </div>
         </div>
 
@@ -545,6 +548,36 @@
 
         // Initial Load
         loadModel('http://localhost:8085/uploads/avatar_sanitized.glb');
+
+        let telemetrySocket = null;
+        function connectWebSocket() {
+            if (telemetrySocket && telemetrySocket.readyState === WebSocket.OPEN) return;
+            
+            try {
+                telemetrySocket = new WebSocket('ws://localhost:8088/');
+                telemetrySocket.onopen = () => {
+                    console.log('[WebSocket] Connected to Gemmi 60FPS Spatial Telemetry Server!');
+                    statusEl.innerText = '⚡ Live 60FPS WebSocket Telemetry Sync Active (ws://localhost:8088/)';
+                    statusEl.style.borderColor = '#00f5d4';
+                    statusEl.style.color = '#00f5d4';
+                    document.getElementById('btn-ws-sync').classList.add('active');
+                };
+                telemetrySocket.onmessage = (evt) => {
+                    try {
+                        const data = JSON.parse(evt.data);
+                        if (data.currentLocomotionState) {
+                            setAvatarState(data.currentLocomotionState.toLowerCase().includes('walk') ? 'walk' : 'cozy');
+                        }
+                    } catch (e) { }
+                };
+                telemetrySocket.onclose = () => {
+                    document.getElementById('btn-ws-sync').classList.remove('active');
+                };
+            } catch (e) {
+                console.warn('[WebSocket] Server offline at ws://localhost:8088/');
+            }
+        }
+        connectWebSocket();
 
         function setAvatarState(state) {
             currentState = state;
