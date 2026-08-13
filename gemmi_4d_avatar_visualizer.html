@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemmi Engine - 4D Spatiotemporal Avatar Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0c14;
+            --panel-bg: rgba(16, 20, 36, 0.85);
+            --panel-border: rgba(120, 119, 198, 0.25);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --accent-purple: #7000ff;
+            --accent-magenta: #f355da;
+            --accent-amber: #ffb703;
+            --accent-green: #00f5d4;
+            --text-main: #f0f4f8;
+            --text-dim: #8a99ad;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+        }
+
+        /* 3D Canvas Area */
+        #canvas-container {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            background: radial-gradient(circle at 50% 40%, #151c33 0%, #080a10 100%);
+        }
+
+        #view3d {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Overlay UI HUD */
+        .hud-header {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .hud-header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hud-header p {
+            color: var(--text-dim);
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 4px;
+        }
+
+        .badge-4d {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-magenta));
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Control Sidebar Panel */
+        #sidebar {
+            width: 380px;
+            height: 100%;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border-left: 1px solid var(--panel-border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 20;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-cyan);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Buttons & Switches */
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: rgba(0, 242, 254, 0.15);
+            border-color: var(--accent-cyan);
+            transform: translateY(-1px);
+        }
+
+        .btn.active {
+            background: linear-gradient(135deg, rgba(112, 0, 255, 0.4), rgba(243, 85, 218, 0.4));
+            border-color: var(--accent-magenta);
+            box-shadow: 0 0 15px rgba(243, 85, 218, 0.3);
+        }
+
+        /* Slider Controls */
+        .control-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-dim);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        /* Telemetry Box */
+        .telemetry-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #b0c4de;
+        }
+
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+        }
+
+        .telemetry-val {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        /* Radar Display Overlay */
+        #radar-container {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            width: 180px;
+            height: 180px;
+            background: rgba(10, 14, 28, 0.8);
+            border: 1px solid rgba(0, 245, 212, 0.3);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        #radar-canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas Viewport -->
+    <div id="canvas-container">
+        <div class="hud-header">
+            <h1>🧠 GEMMI 4D AVATAR <span class="badge-4d">15-Point Matrix</span></h1>
+            <p>Sovereign C# Kinematic Topology Engine (FP 0.0 | FP 1.0 | FP 2.0)</p>
+        </div>
+
+        <canvas id="view3d"></canvas>
+
+        <!-- 360-Degree Radar Display -->
+        <div id="radar-container">
+            <canvas id="radar-canvas" width="180" height="180"></canvas>
+        </div>
+    </div>
+
+    <!-- Control & Telemetry Sidebar -->
+    <div id="sidebar">
+        
+        <!-- State Selector -->
+        <div class="panel-section">
+            <div class="panel-title">🛋️ Avatar Motion State</div>
+            <div class="btn-group">
+                <button class="btn active" id="btn-cozy" onclick="setAvatarState('cozy')">☕ Cozy Chair</button>
+                <button class="btn" id="btn-lean" onclick="setAvatarState('lean')">🔍 Proactive Help</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <button class="btn" id="btn-stand" onclick="setAvatarState('stand')" style="width: 100%;">🧘 Standing Erect (FP=2.0)</button>
+            </div>
+        </div>
+
+        <!-- Height Scale Invariance -->
+        <div class="panel-section">
+            <div class="panel-title">📏 Scale Invariance (0.30m - 10.0m)</div>
+            <div class="btn-group">
+                <button class="btn" onclick="setTargetHeight(0.30)">📱 Widget (0.3m)</button>
+                <button class="btn" onclick="setTargetHeight(1.75)">🧍 Human (1.75m)</button>
+            </div>
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Target Scale Height:</span>
+                    <span id="height-val" class="telemetry-val">1.75 m</span>
+                </div>
+                <input type="range" class="slider" id="height-slider" min="0.30" max="10.0" step="0.05" value="1.75" oninput="onHeightSlider(this.value)">
+            </div>
+        </div>
+
+        <!-- 15-Point Matrix Live Telemetry -->
+        <div class="panel-section">
+            <div class="panel-title">💎 15-Point Spatial Matrix</div>
+            <div class="telemetry-grid">
+                <div class="telemetry-row">
+                    <span>P15 Top Crown (FP=2.0):</span>
+                    <span id="tel-crown" class="telemetry-val">(0.00, 2.00, 0.00)</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>P14 Head Center:</span>
+                    <span id="tel-head" class="telemetry-val">(0.00, 1.85, 0.00)</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>P12/13 Shoulders:</span>
+                    <span id="tel-shoulders" class="telemetry-val">L+1.85 / R-1.85</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>P6 Hips Center (FP=1.0):</span>
+                    <span id="tel-hips" class="telemetry-val">(0.00, 1.00, 0.00)</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>P7/8 Knees Pivot:</span>
+                    <span id="tel-knees" class="telemetry-val">Y = 0.50f</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>P4/5 Ankles Base:</span>
+                    <span id="tel-ankles" class="telemetry-val">Y = 0.15f</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>P1 Ground Plane (FP=0.0):</span>
+                    <span id="tel-ground" class="telemetry-val">(0.00, 0.00, 0.00)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4D Spatiotemporal Telemetry -->
+        <div class="panel-section">
+            <div class="panel-title">🌌 4D Spatiotemporal Vector</div>
+            <div class="telemetry-grid">
+                <div class="telemetry-row">
+                    <span>Time Tick (UtcTicks):</span>
+                    <span id="tel-time" class="telemetry-val">00:00:00.000</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>Proactive Lean Delta:</span>
+                    <span id="tel-lean-delta" class="telemetry-val">ΔZ=0.00, ΔX=0.00</span>
+                </div>
+                <div class="telemetry-row">
+                    <span>Stance Equilibrium:</span>
+                    <span id="tel-stance" class="telemetry-val">Cozy Seated</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- WebGL Kinematic Renderer Script -->
+    <script>
+        const canvas = document.getElementById('view3d');
+        const ctx = canvas.getContext('2d');
+        const radarCanvas = document.getElementById('radar-canvas');
+        const radarCtx = radarCanvas.getContext('2d');
+
+        // State & Kinematic Variables
+        let currentState = 'cozy'; // 'cozy', 'lean', 'stand'
+        let targetHeight = 1.75;
+        let rotationAngle = 0.01;
+
+        // Kinematic Offsets
+        let spineX = 0.0, spineY = 1.0, spineZ = 0.0;
+        let headX = 0.0, headY = 1.85, headZ = 0.0;
+        let armZ = 0.20;
+
+        // Radar Objects
+        const radarObjects = [
+            { name: "Coffee Mug", x: 0.25, z: -0.05, color: "#00f5d4" },
+            { name: "Workstation Laptop", x: 0.00, z: 0.00, color: "#00f2fe" },
+            { name: "Oscilloscope", x: 1.50, z: 0.40, color: "#ffb703" },
+            { name: "NAS Server", x: -2.10, z: -1.20, color: "#f355da" }
+        ];
+
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function setAvatarState(state) {
+            currentState = state;
+            document.querySelectorAll('#btn-cozy, #btn-lean, #btn-stand').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${state}`).classList.add('active');
+        }
+
+        function setTargetHeight(h) {
+            targetHeight = h;
+            document.getElementById('height-slider').value = h;
+            document.getElementById('height-val').innerText = `${h.toFixed(2)} m`;
+        }
+
+        function onHeightSlider(val) {
+            targetHeight = parseFloat(val);
+            document.getElementById('height-val').innerText = `${targetHeight.toFixed(2)} m`;
+        }
+
+        // 3D Matrix Projection Engine
+        function project3D(x, y, z, width, height, rot) {
+            // Apply scale invariance
+            const scale = targetHeight / 2.0;
+            let sx = x * scale;
+            let sy = y * scale;
+            let sz = z * scale;
+
+            // Apply Y-axis rotation
+            const cos = Math.cos(rot);
+            const sin = Math.sin(rot);
+            const rx = sx * cos - sz * sin;
+            const rz = sx * sin + sz * cos + 3.5;
+
+            // Perspective Projection
+            const fov = 400;
+            const px = (rx * fov) / rz + width / 2;
+            const py = (-sy * fov) / rz + height / 2 + 100;
+
+            return { x: px, y: py, rz: rz };
+        }
+
+        function drawSkeleton() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Interpolate Kinematics based on state
+            if (currentState === 'cozy') {
+                spineX += (0.0 - spineX) * 0.1;
+                spineY += (1.0 - spineY) * 0.1;
+                spineZ += (0.0 - spineZ) * 0.1;
+                headX += (0.0 - headX) * 0.1;
+                headZ += (0.0 - headZ) * 0.1;
+                armZ += (0.20 - armZ) * 0.1;
+                document.getElementById('tel-stance').innerText = "Cozy Seated (Sipping Coffee 🎧)";
+                document.getElementById('tel-lean-delta').innerText = "ΔZ=0.00m, ΔX=0.00m";
+            } else if (currentState === 'lean') {
+                spineX += (0.23 - spineX) * 0.1;
+                spineY += (0.95 - spineY) * 0.1;
+                spineZ += (-0.05 - spineZ) * 0.1;
+                headX += (0.23 - headX) * 0.1;
+                headZ += (-0.08 - headZ) * 0.1;
+                armZ += (0.40 - armZ) * 0.1;
+                document.getElementById('tel-stance').innerText = "Proactive Help (Leaning Forward 🔍)";
+                document.getElementById('tel-lean-delta').innerText = "ΔZ=-0.05m, ΔX=+0.23m";
+            } else if (currentState === 'stand') {
+                spineX += (0.0 - spineX) * 0.1;
+                spineY += (1.35 - spineY) * 0.1;
+                spineZ += (0.0 - spineZ) * 0.1;
+                headX += (0.0 - headX) * 0.1;
+                headZ += (0.0 - headZ) * 0.1;
+                armZ += (0.0 - armZ) * 0.1;
+                document.getElementById('tel-stance').innerText = "Standing Erect (Neutral Balance 🧘)";
+                document.getElementById('tel-lean-delta').innerText = "ΔZ=0.00m, ΔX=0.00m";
+            }
+
+            rotationAngle += 0.005;
+
+            // 15-Point Spatial Matrix Coordinates
+            const nodes = {
+                p1_ground: { x: 0.0, y: 0.0, z: 0.0 },
+                p2_lankle: { x: 0.35, y: 0.15, z: -0.02 },
+                p3_rankle: { x: -0.35, y: 0.15, z: -0.02 },
+                p4_lknee: { x: 0.35, y: 0.50, z: 0.05 },
+                p5_rknee: { x: -0.35, y: 0.50, z: 0.05 },
+                p6_hips: { x: 0.0, y: 1.0, z: 0.0 },
+                p7_spine: { x: spineX, y: spineY + 0.35, z: spineZ },
+                p8_lshoulder: { x: 0.55 + spineX, y: spineY + 0.45, z: spineZ },
+                p9_rshoulder: { x: -0.55 + spineX, y: spineY + 0.45, z: spineZ },
+                p10_neck: { x: headX, y: 1.65, z: headZ },
+                p11_head: { x: headX, y: 1.85, z: headZ },
+                p12_crown: { x: headX, y: 2.00, z: headZ },
+                // Arm Chain Nodes
+                l_elbow: { x: 0.60 + spineX, y: spineY + 0.10, z: armZ },
+                r_elbow: { x: -0.60 + spineX, y: spineY + 0.10, z: armZ },
+                l_hand: { x: 0.40 + spineX, y: spineY, z: armZ + 0.2 },
+                r_hand: { x: -0.40 + spineX, y: spineY, z: armZ + 0.2 }
+            };
+
+            // Project Nodes to 2D Screen
+            const p = {};
+            for (let k in nodes) {
+                p[k] = project3D(nodes[k].x, nodes[k].y, nodes[k].z, canvas.width, canvas.height, rotationAngle);
+            }
+
+            // Draw Ground Contact Grid
+            ctx.strokeStyle = 'rgba(0, 242, 254, 0.15)';
+            ctx.lineWidth = 1;
+            for (let i = -3; i <= 3; i++) {
+                let g1 = project3D(i, 0, -3, canvas.width, canvas.height, rotationAngle);
+                let g2 = project3D(i, 0, 3, canvas.width, canvas.height, rotationAngle);
+                ctx.beginPath(); ctx.moveTo(g1.x, g1.y); ctx.lineTo(g2.x, g2.y); ctx.stroke();
+
+                let g3 = project3D(-3, 0, i, canvas.width, canvas.height, rotationAngle);
+                let g4 = project3D(3, 0, i, canvas.width, canvas.height, rotationAngle);
+                ctx.beginPath(); ctx.moveTo(g3.x, g3.y); ctx.lineTo(g4.x, g4.y); ctx.stroke();
+            }
+
+            // Draw Limb Armature Connections
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#00f2fe';
+
+            function connect(n1, n2, color = '#00f2fe') {
+                ctx.strokeStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(p[n1].x, p[n1].y);
+                ctx.lineTo(p[n2].x, p[n2].y);
+                ctx.stroke();
+            }
+
+            // Spine & Central Axis
+            connect('p1_ground', 'p6_hips', 'rgba(255,255,255,0.3)');
+            connect('p6_hips', 'p7_spine', '#00f5d4');
+            connect('p7_spine', 'p10_neck', '#00f5d4');
+            connect('p10_neck', 'p11_head', '#7000ff');
+            connect('p11_head', 'p12_crown', '#f355da');
+
+            // Shoulders & Arms
+            connect('p7_spine', 'p8_lshoulder', '#4facfe');
+            connect('p7_spine', 'p9_rshoulder', '#4facfe');
+            connect('p8_lshoulder', 'l_elbow', '#00f2fe');
+            connect('p9_rshoulder', 'r_elbow', '#00f2fe');
+            connect('l_elbow', 'l_hand', '#f355da');
+            connect('r_elbow', 'r_hand', '#f355da');
+
+            // Hips & Legs
+            connect('p6_hips', 'p4_lknee', '#7000ff');
+            connect('p6_hips', 'p5_rknee', '#7000ff');
+            connect('p4_lknee', 'p2_lankle', '#00f2fe');
+            connect('p5_rknee', 'p3_rankle', '#00f2fe');
+
+            // Draw Joint Nodes (Glow Dots)
+            for (let k in p) {
+                ctx.fillStyle = (k === 'p12_crown' || k === 'p11_head') ? '#f355da' : '#00f2fe';
+                ctx.beginPath();
+                ctx.arc(p[k].x, p[k].y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Telemetry Output Updates
+            const now = new Date();
+            document.getElementById('tel-time').innerText = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+            document.getElementById('tel-crown').innerText = `(${nodes.p12_crown.x.toFixed(2)}, ${nodes.p12_crown.y.toFixed(2)}, ${nodes.p12_crown.z.toFixed(2)})`;
+            document.getElementById('tel-head').innerText = `(${nodes.p11_head.x.toFixed(2)}, ${nodes.p11_head.y.toFixed(2)}, ${nodes.p11_head.z.toFixed(2)})`;
+            document.getElementById('tel-hips').innerText = `(${nodes.p6_hips.x.toFixed(2)}, ${nodes.p6_hips.y.toFixed(2)}, ${nodes.p6_hips.z.toFixed(2)})`;
+
+            drawRadar();
+            requestAnimationFrame(drawSkeleton);
+        }
+
+        // 360-Degree Radar Renderer
+        function drawRadar() {
+            const w = radarCanvas.width;
+            const h = radarCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const radius = w / 2 - 10;
+
+            radarCtx.clearRect(0, 0, w, h);
+
+            // Radar Concentric Circles
+            radarCtx.strokeStyle = 'rgba(0, 245, 212, 0.25)';
+            radarCtx.lineWidth = 1;
+            radarCtx.beginPath(); radarCtx.arc(cx, cy, radius, 0, Math.PI * 2); radarCtx.stroke();
+            radarCtx.beginPath(); radarCtx.arc(cx, cy, radius * 0.6, 0, Math.PI * 2); radarCtx.stroke();
+            radarCtx.beginPath(); radarCtx.arc(cx, cy, radius * 0.3, 0, Math.PI * 2); radarCtx.stroke();
+
+            // Radar Axis Lines
+            radarCtx.beginPath(); radarCtx.moveTo(cx - radius, cy); radarCtx.lineTo(cx + radius, cy); radarCtx.stroke();
+            radarCtx.beginPath(); radarCtx.moveTo(cx, cy - radius); radarCtx.lineTo(cx, cy + radius); radarCtx.stroke();
+
+            // Sweep Line
+            const sweepAngle = (Date.now() / 1000) % (Math.PI * 2);
+            radarCtx.strokeStyle = 'rgba(0, 245, 212, 0.6)';
+            radarCtx.beginPath();
+            radarCtx.moveTo(cx, cy);
+            radarCtx.lineTo(cx + Math.cos(sweepAngle) * radius, cy + Math.sin(sweepAngle) * radius);
+            radarCtx.stroke();
+
+            // Avatar Center Blip
+            radarCtx.fillStyle = '#f355da';
+            radarCtx.beginPath();
+            radarCtx.arc(cx, cy, 4, 0, Math.PI * 2);
+            radarCtx.fill();
+
+            // Plot Objects
+            radarObjects.forEach(obj => {
+                const ox = cx + (obj.x / 3.0) * radius;
+                const oz = cy + (obj.z / 3.0) * radius;
+
+                radarCtx.fillStyle = obj.color;
+                radarCtx.beginPath();
+                radarCtx.arc(ox, oz, 4, 0, Math.PI * 2);
+                radarCtx.fill();
+            });
+        }
+
+        drawSkeleton();
+    </script>
+</body>
+</html>
