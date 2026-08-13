@@ -136,8 +136,7 @@ public class GemmiNetworkServer
                 }
                 else
                 {
-                    context.Response.StatusCode = 400;
-                    context.Response.Close();
+                    _ = Task.Run(() => ProcessHttpRequest(context));
                 }
             }
             catch (Exception ex)
@@ -145,6 +144,77 @@ public class GemmiNetworkServer
                 if (cancellationToken.IsCancellationRequested) break;
                 Console.WriteLine($"[GemmiNetworkServer] Accept error: {ex.Message}");
             }
+        }
+    }
+
+    private void ProcessHttpRequest(HttpListenerContext context)
+    {
+        try
+        {
+            context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+            context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, OPTIONS, POST");
+            context.Response.Headers.Add("Access-Control-Allow-Headers", "*");
+
+            if (context.Request.HttpMethod == "OPTIONS")
+            {
+                context.Response.StatusCode = 200;
+                context.Response.Close();
+                return;
+            }
+
+            string rawUrl = context.Request.RawUrl ?? "/";
+            string path = rawUrl.Split('?')[0].TrimStart('/');
+
+            string baseDir = @"C:\Users\admin\source\gemmi-engine";
+            string localFilePath;
+
+            if (string.IsNullOrEmpty(path) || path == "index.html" || path == "visualizer")
+            {
+                localFilePath = Path.Combine(baseDir, "gemmi_4d_avatar_visualizer.html");
+                context.Response.ContentType = "text/html; charset=utf-8";
+            }
+            else
+            {
+                localFilePath = Path.Combine(baseDir, path.Replace('/', Path.DirectorySeparatorChar));
+                if (localFilePath.EndsWith(".glb", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Response.ContentType = "model/gltf-binary";
+                }
+                else if (localFilePath.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Response.ContentType = "text/html; charset=utf-8";
+                }
+                else
+                {
+                    context.Response.ContentType = "application/octet-stream";
+                }
+            }
+
+            if (File.Exists(localFilePath))
+            {
+                byte[] bytes = File.ReadAllBytes(localFilePath);
+                context.Response.StatusCode = 200;
+                context.Response.ContentLength64 = bytes.Length;
+
+                if (!string.Equals(context.Request.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Response.OutputStream.Write(bytes, 0, bytes.Length);
+                    context.Response.OutputStream.Flush();
+                }
+            }
+            else
+            {
+                context.Response.StatusCode = 404;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[GemmiNetworkServer] HTTP Error: {ex.Message}");
+            context.Response.StatusCode = 500;
+        }
+        finally
+        {
+            context.Response.Close();
         }
     }
 

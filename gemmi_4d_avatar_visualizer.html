@@ -548,15 +548,15 @@
             document.querySelectorAll('#btn-model-person, #btn-model-sovereign').forEach(b => b.classList.remove('active'));
             if (type === 'person') {
                 document.getElementById('btn-model-person').classList.add('active');
-                loadModel('http://localhost:8085/uploads/avatar_sanitized.glb');
+                loadModel('http://localhost:8088/models/avatar_sanitized.glb');
             } else {
                 document.getElementById('btn-model-sovereign').classList.add('active');
-                loadModel('http://localhost:8085/uploads/gemmi_avatar_v3.glb');
+                loadModel('http://localhost:8088/models/gemmi_avatar_v3.glb');
             }
         }
 
         // Initial Load
-        loadModel('http://localhost:8085/uploads/avatar_sanitized.glb');
+        loadModel('http://localhost:8088/models/avatar_sanitized.glb');
 
         let telemetrySocket = null;
         function connectWebSocket() {
