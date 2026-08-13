@@ -481,9 +481,9 @@
             jointSpheres.push(sphere);
         }
 
-        // Load Haven 3D Avatar GLB Model
+        // Load Haven 3D Avatar GLB Model (Khronos Sanitized GLTF 2.0)
         const loader = new THREE.GLTFLoader();
-        const glbUrl = 'http://localhost:8085/uploads/avatar_456071c0b8ea484a89dfaeddf11c5138.glb';
+        const glbUrl = 'http://localhost:8085/uploads/avatar_sanitized.glb';
 
         loader.load(glbUrl, (gltf) => {
             avatarModel = gltf.scene;
