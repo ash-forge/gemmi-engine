@@ -271,6 +271,15 @@
 
     <div id="sidebar">
         
+        <!-- 3D Avatar Model Selection -->
+        <div class="panel-section">
+            <div class="panel-title">🧍 3D Companion Avatar Model Selector</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button class="btn active" id="btn-model-person" onclick="switchModel('person')">🧍‍♀️ 3D Person (VRoid)</button>
+                <button class="btn" id="btn-model-sovereign" onclick="switchModel('sovereign')">🤖 Gemmi Mesh V3</button>
+            </div>
+        </div>
+
         <!-- Action Animations -->
         <div class="panel-section">
             <div class="panel-title">🎭 Expressive Action Presets</div>
@@ -481,41 +490,61 @@
             jointSpheres.push(sphere);
         }
 
-        // Load Sovereign Gemmi 3D Avatar GLB Model (Native Gemmi Avatar Studio)
-        const loader = new THREE.GLTFLoader();
-        const glbUrl = 'http://localhost:8085/uploads/gemmi_avatar_v3.glb';
+        // Model Switcher
+        function loadModel(url) {
+            if (avatarModel) {
+                scene.remove(avatarModel);
+                avatarModel = null;
+                bones = {};
+            }
 
-        loader.load(glbUrl, (gltf) => {
-            avatarModel = gltf.scene;
-            avatarModel.scale.set(1.0, 1.0, 1.0);
-            avatarModel.rotation.y = Math.PI; // 180° Y-Rotation so avatar faces forward toward camera!
-            scene.add(avatarModel);
+            const loader = new THREE.GLTFLoader();
+            loader.load(url, (gltf) => {
+                avatarModel = gltf.scene;
+                avatarModel.scale.set(1.0, 1.0, 1.0);
+                avatarModel.rotation.y = Math.PI; // 180° Y-Rotation so avatar faces forward toward camera!
+                scene.add(avatarModel);
 
-            statusEl.innerText = "✓ Haven 3D Avatar GLB Loaded & Joint Rigged";
-            statusEl.style.borderColor = "#00f5d4";
-            statusEl.style.color = "#00f5d4";
+                statusEl.innerText = `✓ 3D Avatar GLB (${url.split('/').pop()}) Loaded & Joint Rigged`;
+                statusEl.style.borderColor = "#00f5d4";
+                statusEl.style.color = "#00f5d4";
 
-            // Bone traversal
-            avatarModel.traverse((child) => {
-                if (child.isBone) {
-                    bones[child.name] = child;
-                }
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
+                // Bone traversal
+                avatarModel.traverse((child) => {
+                    if (child.isBone) {
+                        bones[child.name] = child;
+                    }
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                console.log("GLB Skeleton Bones Found:", Object.keys(bones));
+            }, (xhr) => {
+                let pct = (xhr.loaded / (xhr.total || 7878712) * 100).toFixed(0);
+                statusEl.innerText = `⌛ Loading 3D Avatar GLB: ${pct}%`;
+            }, (err) => {
+                console.error("GLB Load Error:", err);
+                statusEl.innerText = "⚠️ GLB Asset Server Offline";
+                statusEl.style.borderColor = "#ffb703";
+                statusEl.style.color = "#ffb703";
             });
+        }
 
-            console.log("GLB Skeleton Bones Found:", Object.keys(bones));
-        }, (xhr) => {
-            let pct = (xhr.loaded / (xhr.total || 7878712) * 100).toFixed(0);
-            statusEl.innerText = `⌛ Loading Haven 3D Avatar GLB: ${pct}%`;
-        }, (err) => {
-            console.error("GLB Load Error:", err);
-            statusEl.innerText = "⚠️ GLB Asset Server Offline";
-            statusEl.style.borderColor = "#ffb703";
-            statusEl.style.color = "#ffb703";
-        });
+        function switchModel(type) {
+            document.querySelectorAll('#btn-model-person, #btn-model-sovereign').forEach(b => b.classList.remove('active'));
+            if (type === 'person') {
+                document.getElementById('btn-model-person').classList.add('active');
+                loadModel('http://localhost:8085/uploads/avatar_sanitized.glb');
+            } else {
+                document.getElementById('btn-model-sovereign').classList.add('active');
+                loadModel('http://localhost:8085/uploads/gemmi_avatar_v3.glb');
+            }
+        }
+
+        // Initial Load
+        loadModel('http://localhost:8085/uploads/avatar_sanitized.glb');
 
         function setAvatarState(state) {
             currentState = state;
