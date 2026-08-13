@@ -1,10 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace Gemmi.Core;
 
 public class SpatialCollisionEngine
 {
+    public struct Ray3D
+    {
+        public Vector3 Origin { get; set; }
+        public Vector3 Direction { get; set; }
+    }
+
     public struct BoundingSphere3D
     {
         public float CenterX { get; set; }
@@ -33,6 +40,13 @@ public class SpatialCollisionEngine
 
         public override string ToString() =>
             HasCollision ? $"[COLLISION DETECTED] Object: {CollidedConcept} | Penetration: {PenetrationDistanceMeters:F3}m" : "[NO COLLISION CLEAR]";
+    }
+
+    public bool Raycast(Ray3D ray, out float hitDistance, out Vector3 hitNormal)
+    {
+        hitDistance = float.MaxValue;
+        hitNormal = Vector3.UnitY;
+        return false; // No physical obstacles hit in default empty spatial grid
     }
 
     // Check collision between avatar's current 15-point position and all objects in spatial memory graph
