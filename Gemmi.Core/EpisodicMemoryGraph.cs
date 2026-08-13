@@ -13,6 +13,14 @@ public class GraphNode
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public float Weight { get; set; } = 1.0f;
     public HashSet<Guid> RelatedNodeIds { get; } = new();
+
+    // 3D Spatial Vector Coordinates relative to desk/origin (X, Y, Z meters)
+    public (float X, float Y, float Z) SpatialVector { get; set; } = (0.0f, 0.0f, 0.0f);
+
+    // Sub-meter GPS GeoCoordinates (Latitude, Longitude, Altitude)
+    public (double Latitude, double Longitude, float Altitude) GeoCoordinates { get; set; } = (0.0, 0.0, 0.0f);
+
+    public bool HasSpatialLocation => SpatialVector != (0.0f, 0.0f, 0.0f) || GeoCoordinates != (0.0, 0.0, 0.0f);
 }
 
 public class EpisodicMemoryGraph
@@ -22,11 +30,13 @@ public class EpisodicMemoryGraph
 
     public int NodeCount => _nodes.Count;
 
-    public GraphNode AddOrUpdateConcept(string concept, MemoryCategory category, float weight = 1.0f)
+    public GraphNode AddOrUpdateConcept(string concept, MemoryCategory category, float weight = 1.0f, (float X, float Y, float Z)? spatialVector = null, (double Lat, double Lng, float Alt)? geoCoordinates = null)
     {
         if (_conceptIndex.TryGetValue(concept, out var existingId) && _nodes.TryGetValue(existingId, out var existingNode))
         {
             existingNode.Weight += weight;
+            if (spatialVector.HasValue) existingNode.SpatialVector = spatialVector.Value;
+            if (geoCoordinates.HasValue) existingNode.GeoCoordinates = geoCoordinates.Value;
             return existingNode;
         }
 
@@ -36,6 +46,9 @@ public class EpisodicMemoryGraph
             Category = category,
             Weight = weight
         };
+
+        if (spatialVector.HasValue) node.SpatialVector = spatialVector.Value;
+        if (geoCoordinates.HasValue) node.GeoCoordinates = geoCoordinates.Value;
 
         _nodes[node.Id] = node;
         _conceptIndex[concept] = node.Id;
@@ -71,6 +84,29 @@ public class EpisodicMemoryGraph
         }
 
         return result.OrderByDescending(n => n.Weight).ToList();
+    }
+
+    // 3D Spatial Proximity Lookup using Euclidean Distance: sqrt(dx^2 + dy^2 + dz^2)
+    public List<(GraphNode Node, float DistanceMeters)> GetConceptsBySpatialProximity(float x, float y, float z, float radiusMeters = 2.0f)
+    {
+        var matches = new List<(GraphNode Node, float DistanceMeters)>();
+
+        foreach (var node in _nodes.Values)
+        {
+            if (!node.HasSpatialLocation) continue;
+
+            float dx = node.SpatialVector.X - x;
+            float dy = node.SpatialVector.Y - y;
+            float dz = node.SpatialVector.Z - z;
+            float distance = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (distance <= radiusMeters)
+            {
+                matches.Add((node, distance));
+            }
+        }
+
+        return matches.OrderBy(m => m.DistanceMeters).ToList();
     }
 
     public void Clear()
