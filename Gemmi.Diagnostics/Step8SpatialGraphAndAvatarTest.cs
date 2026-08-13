@@ -75,6 +75,10 @@ public class Step8SpatialGraphAndAvatarTest
         Console.WriteLine($"    • Point 3 (Crown Zenith Anchor    FP=2.0): {postureAnchors.TopPoint}");
         Console.WriteLine($"    • Calculated Avatar Posture Stance      : {postureAnchors.StanceSummary}");
 
+        Console.WriteLine("\n -> Testing 4D Spatiotemporal Localization (Space + Time Vector Tracking)...");
+        var state4D = avatar.Get4DSpatialState();
+        Console.WriteLine($"    • {state4D}");
+
         Console.WriteLine("\n -> Simulating Code Fix Clear Event...");
         avatar.OnSpatialVisionPerception("Build succeeded. 0 Warning(s) 0 Error(s)", false);
 

@@ -30,6 +30,18 @@ public struct PostureAnchorPoints3D
     public string StanceSummary => IsErectStanding ? "Standing Erect (Neutral Balance)" : "Leaning / Seated Stance";
 }
 
+public struct SpatiotemporalTransform4D
+{
+    public JointTransform3D SpatialVector3D { get; set; } // (X, Y, Z) Space
+    public long UtcTicks { get; set; }                     // Time (t)
+    public AvatarState ActiveState { get; set; }
+    public PostureAnchorPoints3D Anchors { get; set; }
+
+    public DateTime Timestamp => new DateTime(UtcTicks, DateTimeKind.Utc);
+
+    public override string ToString() => $"[4D Space-Time] Vector3D: {SpatialVector3D} | Time: {Timestamp:HH:mm:ss.fff} | State: {ActiveState}";
+}
+
 public class LimbArmatureNode
 {
     public string Name { get; set; } = string.Empty;
@@ -122,6 +134,18 @@ public class AvatarStateController
             GroundPoint = GroundFeetTransform,
             MidwayPoint = new JointTransform3D { X = SpineTransform.X, Y = MidpointHipsTransform.Y, Z = 1.0f + SpineTransform.Z },
             TopPoint = TopOfHeadTransform
+        };
+    }
+
+    // 4D Spatiotemporal State Vector (X, Y, Z, Time)
+    public SpatiotemporalTransform4D Get4DSpatialState()
+    {
+        return new SpatiotemporalTransform4D
+        {
+            SpatialVector3D = SpineTransform,
+            UtcTicks = DateTime.UtcNow.Ticks,
+            ActiveState = CurrentState,
+            Anchors = GetPostureAnchors()
         };
     }
 
