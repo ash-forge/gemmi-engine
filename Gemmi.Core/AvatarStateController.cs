@@ -424,6 +424,43 @@ public class AvatarStateController
         return gaitTrajectory;
     }
 
+    // Inverse Kinematics Reaching: Extends arm using Analytical 2-Bone IK to reach for target 3D vector
+    public InverseKinematicsEngine.IkReachSolution ReachRightHandToTarget(float targetX, float targetY, float targetZ)
+    {
+        var targetPos = new JointTransform3D { X = targetX, Y = targetY, Z = targetZ };
+        var ikSolution = InverseKinematicsEngine.SolveArmIk(RightArm, targetPos);
+
+        if (ikSolution.IsTargetReachable)
+        {
+            RightArm.Elbow.LocalOffset.X = ikSolution.ElbowPos.X - RightArm.Shoulder.X;
+            RightArm.Elbow.LocalOffset.Y = ikSolution.ElbowPos.Y - RightArm.Shoulder.Y;
+            RightArm.Elbow.LocalOffset.Z = ikSolution.ElbowPos.Z - RightArm.Shoulder.Z;
+
+            RightArm.Wrist.LocalOffset.X = ikSolution.HandPos.X - ikSolution.ElbowPos.X;
+            RightArm.Wrist.LocalOffset.Y = ikSolution.HandPos.Y - ikSolution.ElbowPos.Y;
+            RightArm.Wrist.LocalOffset.Z = ikSolution.HandPos.Z - ikSolution.ElbowPos.Z;
+        }
+
+        return ikSolution;
+    }
+
+    // Obstacle-Avoiding 4D Waypoint Navigation Engine
+    public List<FifteenPointSpatialMatrix3D> NavigateWithObstacleAvoidance(float destinationX, float destinationZ, EpisodicMemoryGraph memoryGraph)
+    {
+        var waypoints = SpatialCollisionEngine.CalculateObstacleFreeWaypoints(SpineTransform.X, SpineTransform.Z, destinationX, destinationZ, memoryGraph);
+        var fullTrajectory = new List<FifteenPointSpatialMatrix3D>();
+
+        for (int i = 0; i < waypoints.Count - 1; i++)
+        {
+            var start = waypoints[i];
+            var end = waypoints[i + 1];
+            var segmentGait = WalkToSpatialCoordinates(end.X, end.Z, stepCount: 3);
+            fullTrajectory.AddRange(segmentGait);
+        }
+
+        return fullTrajectory;
+    }
+
     public void OnSpatialVisionPerception(string detectedScreenText, bool errorOrBugDetected)
     {
         if (errorOrBugDetected || detectedScreenText.Contains("Exception") || detectedScreenText.Contains("error") || detectedScreenText.Contains("NullReference"))
