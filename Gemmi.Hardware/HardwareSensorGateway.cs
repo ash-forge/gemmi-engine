@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Ports;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 using Gemmi.Core;
 
@@ -15,8 +16,30 @@ public class HardwareSensorTelemetry
     public DateTime ReadAt { get; set; } = DateTime.UtcNow;
 }
 
-public class HardwareSensorGateway
+public class HardwareSensorGateway : IDisposable
 {
+    private MicrophoneAudioSensor? _micSensor;
+    private CameraVisionSensor? _cameraSensor;
+
+    public MicrophoneAudioSensor? Microphone => _micSensor;
+    public CameraVisionSensor? Camera => _cameraSensor;
+
+    public bool IsAudioHardwareActive => _micSensor?.IsRecording ?? false;
+    public bool IsVisionHardwareActive => _cameraSensor?.IsCapturing ?? false;
+
+    [SupportedOSPlatform("windows")]
+    public bool InitializeMicrophone(int deviceNumber = 0, int sampleRate = 16000)
+    {
+        _micSensor = new MicrophoneAudioSensor();
+        return _micSensor.StartRecording(deviceNumber, sampleRate);
+    }
+
+    public bool InitializeCamera(int deviceId = 0, int fps = 15)
+    {
+        _cameraSensor = new CameraVisionSensor(targetFps: fps);
+        return _cameraSensor.StartCapture(deviceId);
+    }
+
     public static List<HardwareSensorTelemetry> ScanHardwareSensors()
     {
         return new List<HardwareSensorTelemetry>
@@ -39,5 +62,11 @@ public class HardwareSensorGateway
                 salienceScore: 0.50f
             );
         }
+    }
+
+    public void Dispose()
+    {
+        _micSensor?.Dispose();
+        _cameraSensor?.Dispose();
     }
 }
