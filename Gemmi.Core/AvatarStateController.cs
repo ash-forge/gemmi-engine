@@ -8,7 +8,8 @@ public enum AvatarState
     CozyChairListeningMusic,
     LeaningForwardProactiveHelp,
     ActivePairProgramming,
-    IdleObserving
+    IdleObserving,
+    WalkingLocomotion
 }
 
 public class JointTransform3D
@@ -370,9 +371,57 @@ public class AvatarStateController
                 SpineTransform.Z = -0.02f;
                 ProactiveAssistanceTriggered = true;
                 break;
+
+            case AvatarState.WalkingLocomotion:
+                SpineTransform.Y = 1.35f;
+                HeadTransform.Y = 1.85f;
+                TopOfHeadTransform.Y = 2.00f;
+                ProactiveAssistanceTriggered = false;
+                break;
         }
 
         OnStateChanged?.Invoke(CurrentState, CurrentActivity);
+    }
+
+    // 4D Locomotion Gait Engine: Moves avatar across 3D vector space (targetX, targetZ) step-by-step
+    public List<FifteenPointSpatialMatrix3D> WalkToSpatialCoordinates(float targetX, float targetZ, int stepCount = 5)
+    {
+        SetState(AvatarState.WalkingLocomotion, $"Walking across 3D vector space toward ({targetX:F2}m, {targetZ:F2}m) 🚶‍♂️💨");
+        var gaitTrajectory = new List<FifteenPointSpatialMatrix3D>();
+
+        float startX = SpineTransform.X;
+        float startZ = SpineTransform.Z;
+
+        for (int i = 1; i <= stepCount; i++)
+        {
+            float progress = (float)i / stepCount;
+            float currentX = startX + (targetX - startX) * progress;
+            float currentZ = startZ + (targetZ - startZ) * progress;
+
+            // Gait Sinusoidal Leg Strides (Alternating Left/Right Leg Swing)
+            float stridePhase = progress * MathF.PI * 4; // 2 full strides
+            float legSwingZ = MathF.Sin(stridePhase) * 0.25f;
+            float hipBounceY = 1.35f + MathF.Abs(MathF.Cos(stridePhase)) * 0.05f;
+
+            SpineTransform.X = currentX;
+            SpineTransform.Y = hipBounceY;
+            SpineTransform.Z = currentZ;
+
+            HeadTransform.X = currentX;
+            HeadTransform.Y = hipBounceY + 0.50f;
+            HeadTransform.Z = currentZ;
+
+            TopOfHeadTransform.X = currentX;
+            TopOfHeadTransform.Y = hipBounceY + 0.65f;
+            TopOfHeadTransform.Z = currentZ;
+
+            LeftLeg.Knee.LocalOffset.Z = legSwingZ;
+            RightLeg.Knee.LocalOffset.Z = -legSwingZ;
+
+            gaitTrajectory.Add(Get15PointSpatialMatrix());
+        }
+
+        return gaitTrajectory;
     }
 
     public void OnSpatialVisionPerception(string detectedScreenText, bool errorOrBugDetected)

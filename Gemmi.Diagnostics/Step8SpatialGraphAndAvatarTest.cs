@@ -99,6 +99,14 @@ public class Step8SpatialGraphAndAvatarTest
         var matrix15 = avatar.Get15PointSpatialMatrix();
         Console.WriteLine($"    • {matrix15}");
 
+        Console.WriteLine("\n -> Executing 4D Walking Locomotion Trajectory Simulation (Walking to Oscilloscope Workbench at X=1.50m, Z=0.40m)...");
+        var walkTrajectory = avatar.WalkToSpatialCoordinates(1.50f, 0.40f, stepCount: 5);
+        int stepIdx = 1;
+        foreach (var frame in walkTrajectory)
+        {
+            Console.WriteLine($"    • [STEP {stepIdx++}/5 GAIT FRAME] Spine (X:{avatar.SpineTransform.X:F2}m, Y:{avatar.SpineTransform.Y:F2}m, Z:{avatar.SpineTransform.Z:F2}m) | Left Knee Swing Z: {avatar.LeftLeg.Knee.LocalOffset.Z:F2}m | Right Knee Swing Z: {avatar.RightLeg.Knee.LocalOffset.Z:F2}m");
+        }
+
         Console.WriteLine("\n -> Simulating Code Fix Clear Event...");
         avatar.OnSpatialVisionPerception("Build succeeded. 0 Warning(s) 0 Error(s)", false);
 
