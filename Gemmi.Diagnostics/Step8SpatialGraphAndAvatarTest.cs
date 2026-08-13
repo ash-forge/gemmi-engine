@@ -91,6 +91,10 @@ public class Step8SpatialGraphAndAvatarTest
             Console.WriteLine($"    • {blip}");
         }
 
+        Console.WriteLine("\n -> Testing 12-Point Anatomical Spatial Anchor System (Hyper-Cube Skeletal Grid)...");
+        var anchors12 = avatar.Get12PointSpatialAnchors();
+        Console.WriteLine($"    • {anchors12}");
+
         Console.WriteLine("\n -> Simulating Code Fix Clear Event...");
         avatar.OnSpatialVisionPerception("Build succeeded. 0 Warning(s) 0 Error(s)", false);
 

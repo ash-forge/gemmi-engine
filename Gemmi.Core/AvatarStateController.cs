@@ -30,6 +30,24 @@ public struct PostureAnchorPoints3D
     public string StanceSummary => IsErectStanding ? "Standing Erect (Neutral Balance)" : "Leaning / Seated Stance";
 }
 
+public struct TwelvePointSpatialAnchors3D
+{
+    public JointTransform3D P1_GroundCenter { get; set; }      // 1. Floor Origin (0.00, 0.00, 0.00)
+    public JointTransform3D P2_LeftAnkleBase { get; set; }      // 2. Left Ankle Base (+0.35, 0.15, -0.02)
+    public JointTransform3D P3_RightAnkleBase { get; set; }     // 3. Right Ankle Base (-0.35, 0.15, -0.02)
+    public JointTransform3D P4_LeftKneePivot { get; set; }      // 4. Left Knee Pivot (+0.35, 0.50, 0.05)
+    public JointTransform3D P5_RightKneePivot { get; set; }     // 5. Right Knee Pivot (-0.35, 0.50, 0.05)
+    public JointTransform3D P6_CenterOfMassHips { get; set; }   // 6. Center of Mass Hips (0.00, 1.00, 0.00)
+    public JointTransform3D P7_SpineChestCenter { get; set; }   // 7. Spine Chest Center (0.00, 1.35, 0.00)
+    public JointTransform3D P8_LeftShoulderAnchor { get; set; } // 8. Left Shoulder (+1.85, 1.45, 0.00)
+    public JointTransform3D P9_RightShoulderAnchor { get; set; }// 9. Right Shoulder (-1.85, 1.45, 0.00)
+    public JointTransform3D P10_NeckBase { get; set; }         // 10. Neck Base (0.00, 1.65, 0.00)
+    public JointTransform3D P11_HeadCenter { get; set; }        // 11. Head Center (0.00, 1.85, 0.00)
+    public JointTransform3D P12_CrownZenithTop { get; set; }    // 12. Crown Zenith Top (0.00, 2.00, 0.00)
+
+    public override string ToString() => $"[12-POINT ANCHOR SYSTEM] P1(Floor):{P1_GroundCenter} | P6(Hips):{P6_CenterOfMassHips} | P8/P9(Shoulders):L{P8_LeftShoulderAnchor}/R{P9_RightShoulderAnchor} | P12(Crown):{P12_CrownZenithTop}";
+}
+
 public struct SpatiotemporalTransform4D
 {
     public JointTransform3D SpatialVector3D { get; set; } // (X, Y, Z) Space
@@ -171,6 +189,31 @@ public class AvatarStateController
             GroundPoint = GroundFeetTransform,
             MidwayPoint = new JointTransform3D { X = SpineTransform.X, Y = MidpointHipsTransform.Y, Z = 1.0f + SpineTransform.Z },
             TopPoint = TopOfHeadTransform
+        };
+    }
+
+    // 12-Point Anatomical Spatial Anchor System (P1 Ground -> P12 Crown Zenith)
+    public TwelvePointSpatialAnchors3D Get12PointSpatialAnchors()
+    {
+        var lKneeWorld = LeftLeg.Knee.ComputeWorldPosition(LeftLeg.Hip);
+        var rKneeWorld = RightLeg.Knee.ComputeWorldPosition(RightLeg.Hip);
+        var lAnkleWorld = LeftLeg.Ankle.ComputeWorldPosition(lKneeWorld);
+        var rAnkleWorld = RightLeg.Ankle.ComputeWorldPosition(rKneeWorld);
+
+        return new TwelvePointSpatialAnchors3D
+        {
+            P1_GroundCenter = GroundFeetTransform,
+            P2_LeftAnkleBase = lAnkleWorld,
+            P3_RightAnkleBase = rAnkleWorld,
+            P4_LeftKneePivot = lKneeWorld,
+            P5_RightKneePivot = rKneeWorld,
+            P6_CenterOfMassHips = MidpointHipsTransform,
+            P7_SpineChestCenter = SpineTransform,
+            P8_LeftShoulderAnchor = LeftArm.Shoulder,
+            P9_RightShoulderAnchor = RightArm.Shoulder,
+            P10_NeckBase = new JointTransform3D { X = SpineTransform.X, Y = 1.65f, Z = SpineTransform.Z },
+            P11_HeadCenter = HeadTransform,
+            P12_CrownZenithTop = TopOfHeadTransform
         };
     }
 
