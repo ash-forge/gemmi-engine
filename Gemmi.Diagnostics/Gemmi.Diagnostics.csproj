@@ -8,7 +8,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <StartupObject>Gemmi.Diagnostics.Step9IKAndCollisionTest</StartupObject>
+    <StartupObject>Gemmi.Diagnostics.Step10MeshSkinningTest</StartupObject>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

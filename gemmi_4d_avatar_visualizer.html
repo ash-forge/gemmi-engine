@@ -262,8 +262,12 @@
                 <button class="btn active" id="btn-cozy" onclick="setAvatarState('cozy')">☕ Cozy Chair</button>
                 <button class="btn" id="btn-lean" onclick="setAvatarState('lean')">🔍 Proactive Help</button>
             </div>
+            <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn" id="btn-stand" onclick="setAvatarState('stand')">🧘 Standing (FP=2.0)</button>
+                <button class="btn" id="btn-walk" onclick="setAvatarState('walk')">🚶‍♂️ Walk to Radar</button>
+            </div>
             <div style="margin-top: 10px;">
-                <button class="btn" id="btn-stand" onclick="setAvatarState('stand')" style="width: 100%;">🧘 Standing Erect (FP=2.0)</button>
+                <button class="btn" id="btn-mesh" onclick="toggleMeshBody()" style="width: 100%;">👗 Render 3D Skinned Mesh Body</button>
             </div>
         </div>
 
@@ -350,6 +354,19 @@
         let currentState = 'cozy'; // 'cozy', 'lean', 'stand'
         let targetHeight = 1.75;
         let rotationAngle = 0.01;
+        let showMeshBody = true; // Default 3D Skinned Body Mesh Enabled
+
+        function toggleMeshBody() {
+            showMeshBody = !showMeshBody;
+            const btn = document.getElementById('btn-mesh');
+            if (showMeshBody) {
+                btn.innerText = "👗 Hide 3D Skinned Mesh Body";
+                btn.classList.add('active');
+            } else {
+                btn.innerText = "👗 Render 3D Skinned Mesh Body";
+                btn.classList.remove('active');
+            }
+        }
 
         // Kinematic Offsets
         let spineX = 0.0, spineY = 1.0, spineZ = 0.0;
@@ -441,6 +458,17 @@
                 armZ += (0.0 - armZ) * 0.1;
                 document.getElementById('tel-stance').innerText = "Standing Erect (Neutral Balance 🧘)";
                 document.getElementById('tel-lean-delta').innerText = "ΔZ=0.00m, ΔX=0.00m";
+            } else if (currentState === 'walk') {
+                // Gait Walk Trajectory to Oscilloscope Workbench (1.50m, 0.40m)
+                const walkTime = Date.now() / 300;
+                spineX += (1.50 * Math.sin(walkTime * 0.5) - spineX) * 0.05;
+                spineZ += (0.40 * Math.cos(walkTime * 0.5) - spineZ) * 0.05;
+                spineY = 1.35 + Math.abs(Math.sin(walkTime * 2)) * 0.06;
+                headX = spineX;
+                headZ = spineZ;
+                armZ = Math.sin(walkTime * 2) * 0.25;
+                document.getElementById('tel-stance').innerText = "4D Walking Gait Locomotion 🚶‍♂️";
+                document.getElementById('tel-lean-delta').innerText = `ΔZ=${spineZ.toFixed(2)}m, ΔX=${spineX.toFixed(2)}m`;
             }
 
             rotationAngle += 0.005;
@@ -485,8 +513,59 @@
                 ctx.beginPath(); ctx.moveTo(g3.x, g3.y); ctx.lineTo(g4.x, g4.y); ctx.stroke();
             }
 
-            // Draw Limb Armature Connections
-            ctx.lineWidth = 3;
+            // Draw 3D Volumetric Skinned Body Mesh (Haven Companion Body Model)
+            if (showMeshBody) {
+                ctx.fillStyle = 'rgba(243, 85, 218, 0.45)'; // Glowing Head Visor (Magenta)
+                ctx.strokeStyle = '#f355da';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p['p11_head'].x, p['p11_head'].y - 5, 22, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Upper Chest Torso Mesh Armor
+                ctx.fillStyle = 'rgba(0, 242, 254, 0.35)'; // Cyan Armor
+                ctx.strokeStyle = '#00f2fe';
+                ctx.beginPath();
+                ctx.moveTo(p['p8_lshoulder'].x + 10, p['p8_lshoulder'].y);
+                ctx.lineTo(p['p9_rshoulder'].x - 10, p['p9_rshoulder'].y);
+                ctx.lineTo(p['p6_hips'].x - 15, p['p6_hips'].y);
+                ctx.lineTo(p['p6_hips'].x + 15, p['p6_hips'].y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Pelvis Hips Mesh
+                ctx.fillStyle = 'rgba(112, 0, 255, 0.40)'; // Deep Purple
+                ctx.strokeStyle = '#7000ff';
+                ctx.beginPath();
+                ctx.arc(p['p6_hips'].x, p['p6_hips'].y, 18, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Left & Right Thigh Limb Volumes
+                function drawLimbCapsule(pStart, pEnd, radius = 12, color = 'rgba(0, 245, 212, 0.30)') {
+                    ctx.strokeStyle = '#00f5d4';
+                    ctx.lineWidth = radius;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(pStart.x, pStart.y);
+                    ctx.lineTo(pEnd.x, pEnd.y);
+                    ctx.stroke();
+                }
+
+                drawLimbCapsule(p['p6_hips'], p['p4_lknee'], 16);
+                drawLimbCapsule(p['p6_hips'], p['p5_rknee'], 16);
+                drawLimbCapsule(p['p4_lknee'], p['p2_lankle'], 12);
+                drawLimbCapsule(p['p5_rknee'], p['p3_rankle'], 12);
+                drawLimbCapsule(p['p8_lshoulder'], p['l_elbow'], 12);
+                drawLimbCapsule(p['p9_rshoulder'], p['r_elbow'], 12);
+                drawLimbCapsule(p['l_elbow'], p['l_hand'], 10);
+                drawLimbCapsule(p['r_elbow'], p['r_hand'], 10);
+            }
+
+            // Draw Limb Armature Connections Wireframe
+            ctx.lineWidth = 2;
             ctx.strokeStyle = '#00f2fe';
 
             function connect(n1, n2, color = '#00f2fe') {
