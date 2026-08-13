@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Gemmi.Core;
@@ -29,7 +30,41 @@ public class GemmiLiveSystemHost
         var networkServer = new GemmiNetworkServer(8088);
         networkServer.Start();
 
-        // 2. Initialize Hardware Sensors
+        // 2. State & User Command Tracking
+        string activeState = "CozyChairListeningMusic"; // Default to relaxed cozy state!
+        string? activeAction = null;
+        float currentX = 0.0f;
+        float currentZ = 0.0f;
+        float walkProgress = 0.0f;
+
+        networkServer.OnClientCommandReceived += (clientId, commandStr) =>
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(commandStr);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("state", out var stateProp))
+                {
+                    string newState = stateProp.GetString() ?? "CozyChairListeningMusic";
+                    activeState = newState.Equals("walk", StringComparison.OrdinalIgnoreCase) || newState.Contains("walk", StringComparison.OrdinalIgnoreCase)
+                        ? "WalkingLocomotion"
+                        : "CozyChairListeningMusic";
+                    Console.WriteLine($"[GemmiHost] 👤 User commanded locomotion state: {activeState}");
+                }
+
+                if (root.TryGetProperty("action", out var actionProp))
+                {
+                    activeAction = actionProp.GetString();
+                    Console.WriteLine($"[GemmiHost] 🎭 User triggered action: {activeAction}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GemmiHost] Command parse error: {ex.Message}");
+            }
+        };
+
+        // 3. Initialize Hardware Sensors
         Console.WriteLine("\n[2] Initializing Microphone & Camera Hardware Sensors...");
         using var micSensor = OperatingSystem.IsWindows() ? new MicrophoneAudioSensor() : null;
         using var camSensor = new CameraVisionSensor(targetFps: 15);
@@ -41,7 +76,7 @@ public class GemmiLiveSystemHost
 
         camSensor.StartCapture(0, 640, 480);
 
-        // 3. Initialize Core Engines
+        // 4. Initialize Core Engines
         Console.WriteLine("\n[3] Initializing Avatar Locomotion, 3D Audio, Vision & Facial Viseme Engines...");
         var avatar = new AvatarStateController();
         var facialEngine = new GemmiFacialAnimationEngine();
@@ -56,30 +91,33 @@ public class GemmiLiveSystemHost
         };
 
         Console.WriteLine("\n==========================================================================");
-        Console.WriteLine(" 🚀 GEMMI LIVE SYSTEM HOST RUNNING (Press Ctrl+C to Stop)");
-        Console.WriteLine(" 🌐 WebGL Visualizer Sync : file:///C:/Users/admin/source/gemmi-engine/gemmi_4d_avatar_visualizer.html");
+        Console.WriteLine(" 🚀 GEMMI LIVE SYSTEM HOST RUNNING (Interactive User Mode)");
+        Console.WriteLine(" 🌐 WebGL Visualizer Sync : http://localhost:8088/");
         Console.WriteLine(" ⚡ WebSocket Telemetry   : ws://localhost:8088/");
         Console.WriteLine("==========================================================================");
 
         int frameIdx = 0;
-        float walkProgress = 0.0f;
 
         while (!cts.IsCancellationRequested)
         {
             frameIdx++;
-            walkProgress += 0.03f;
-            float currentX = MathF.Sin(walkProgress) * 1.5f;
-            float currentZ = MathF.Cos(walkProgress) * 0.5f;
 
-            string stateStr = MathF.Abs(MathF.Sin(walkProgress)) > 0.3f ? "WalkingLocomotion" : "CozyChairListeningMusic";
-
-            // Trigger speech viseme demo every 500 frames (~8 seconds)
-            if (frameIdx % 500 == 1)
+            // Handle user-selected locomotion vs cozy idle
+            if (activeState == "WalkingLocomotion")
             {
-                facialEngine.StartSpeechAnimation("Hello Daniel, Sovereign Gemmi Spatial AI is fully active and listening.", 3.5f);
+                walkProgress += 0.03f;
+                currentX = MathF.Sin(walkProgress) * 1.5f;
+                currentZ = MathF.Cos(walkProgress) * 0.5f;
+            }
+            else
+            {
+                // Smoothly return to center (0, 0)
+                currentX += (0.0f - currentX) * 0.08f;
+                currentZ += (0.0f - currentZ) * 0.08f;
             }
 
-            var morphs = facialEngine.Update(0.016f, stateStr);
+            // Update Facial Animation & Blinking
+            var morphs = facialEngine.Update(0.016f, activeState);
 
             // Get 15-Point Spatial Matrix
             avatar.SpineTransform.X = currentX;
@@ -95,10 +133,10 @@ public class GemmiLiveSystemHost
             var telemetryFrame = new SpatialTelemetryFrame
             {
                 FrameIndex = frameIdx,
-                CurrentLocomotionState = stateStr,
-                CurrentSpeed = 1.2f,
+                CurrentLocomotionState = activeState,
+                CurrentSpeed = activeState == "WalkingLocomotion" ? 1.2f : 0.0f,
                 MorphWeights = morphs.ToDictionary(),
-                CameraPosition = new float[] { currentX, 1.6f, currentZ + 3.0f },
+                CameraPosition = new float[] { currentX, 1.6f, currentZ + 2.8f },
                 CameraRotation = new float[] { 0, 0, 0 }
             };
 
@@ -122,9 +160,9 @@ public class GemmiLiveSystemHost
 
             await networkServer.BroadcastTelemetryAsync(telemetryFrame);
 
-            if (frameIdx % 60 == 0)
+            if (frameIdx % 120 == 0)
             {
-                Console.WriteLine($"[GemmiHost 60FPS] Frame #{frameIdx} | Pos: ({currentX:F2}m, {currentZ:F2}m) | State: {stateStr} | Clients: {networkServer.ConnectedClientCount}");
+                Console.WriteLine($"[GemmiHost 60FPS] Frame #{frameIdx} | Pos: ({currentX:F2}m, {currentZ:F2}m) | State: {activeState} | Clients: {networkServer.ConnectedClientCount}");
             }
 
             await Task.Delay(16, CancellationToken.None); // ~60 FPS

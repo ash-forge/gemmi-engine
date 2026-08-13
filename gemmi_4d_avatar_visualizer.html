@@ -584,15 +584,9 @@
                 telemetrySocket.onmessage = (evt) => {
                     try {
                         const data = JSON.parse(evt.data);
-                        if (data.currentLocomotionState) {
-                            setAvatarState(data.currentLocomotionState.toLowerCase().includes('walk') ? 'walk' : 'cozy');
-                        }
                         if (data.morphWeights) {
                             for (let [k, v] of Object.entries(data.morphWeights)) {
                                 currentMorphs[k] = v;
-                            }
-                            if (document.getElementById('jaw-val') && data.morphWeights.jawOpen !== undefined) {
-                                document.getElementById('jaw-val').innerText = (data.morphWeights.jawOpen * 100).toFixed(0) + '%';
                             }
                         }
                     } catch (e) { }
@@ -606,6 +600,14 @@
         }
         connectWebSocket();
 
+        function sendServerCommand(cmd) {
+            if (telemetrySocket && telemetrySocket.readyState === WebSocket.OPEN) {
+                try {
+                    telemetrySocket.send(JSON.stringify(cmd));
+                } catch (e) { }
+            }
+        }
+
         function setAvatarState(state) {
             currentState = state;
             activeAction = null;
@@ -613,11 +615,13 @@
             if (document.getElementById(`btn-${state}`)) {
                 document.getElementById(`btn-${state}`).classList.add('active');
             }
+            sendServerCommand({ state: state });
         }
 
         function triggerAction(action) {
             activeAction = action;
             actionTime = Date.now();
+            sendServerCommand({ action: action });
         }
 
         function toggleSkeletonWireframe() {
