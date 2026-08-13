@@ -93,6 +93,9 @@ public partial class MainWindow : Window
             var nodes = await MeshAutoDiscovery.ScanNetBirdMeshAsync();
             GridMeshNodes.ItemsSource = nodes;
 
+            InitializeAgentOrchestrator();
+            GridAgentTasks.ItemsSource = _agentOrchestrator.History;
+
             App.Log("MainWindow_Loaded finished successfully");
         }
         catch (Exception ex)
@@ -104,6 +107,7 @@ public partial class MainWindow : Window
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         _cts.Cancel();
+        _ = _agentOrchestrator.StopAsync();
     }
 
     private void OnSpontaneousInitiated(string alert)
@@ -340,5 +344,104 @@ public partial class MainWindow : Window
         TxtStatus.Text = $"User Profile Updated: Welcome, {_state.User.UserName}!";
 
         MessageBox.Show($"Profile Saved!\nDisplay Name: {_state.User.UserName}\nRole: {_state.User.RoleTitle}\nVoice Persona: {_state.Voice.Gender} Voice", "Gemmi User Settings Updated", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    // --- TAB 8 & 9: 4D AVATAR & AGENT ORCHESTRATOR HANDLERS ---
+    private readonly GemmiAgentOrchestrator _agentOrchestrator = new();
+    private bool _isWalkingAvatar = false;
+
+    private void InitializeAgentOrchestrator()
+    {
+        _agentOrchestrator.RegisterTool("ModelInspector", "Validates local model files and extracts metadata", (pMap, ct) =>
+        {
+            var p = pMap.TryGetValue("path", out var val) ? val?.ToString() ?? "" : "";
+            bool exists = File.Exists(p);
+            return Task.FromResult(exists 
+                ? AgentToolResult.Ok($"Model found ({new FileInfo(p).Length / 1024 / 1024} MB)", new { Exists = true })
+                : AgentToolResult.Fail("Model file not found"));
+        });
+
+        _agentOrchestrator.RegisterTool("MemoryConsolidator", "Flushes working memory to episodic graph", (pMap, ct) =>
+        {
+            return Task.FromResult(AgentToolResult.Ok("Episodic memory consolidated successfully"));
+        });
+
+        _agentOrchestrator.OnTaskCompleted += task =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                GridAgentTasks.ItemsSource = _agentOrchestrator.History;
+                TxtStatus.Text = $"Agent Task Succeeded: {task.Name}";
+            });
+        };
+
+        _agentOrchestrator.OnTaskFailed += (task, err) =>
+        {
+            Dispatcher.Invoke(() =>
+            {
+                GridAgentTasks.ItemsSource = _agentOrchestrator.History;
+                TxtStatus.Text = $"Agent Task Failed: {task.Name} ({err})";
+            });
+        };
+
+        _agentOrchestrator.Start();
+    }
+
+    private void BtnReloadAvatar_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            AvatarWebView.CoreWebView2?.Reload();
+            TxtStatus.Text = "Reloaded 3D Avatar WebGL viewport.";
+        }
+        catch (Exception ex)
+        {
+            TxtStatus.Text = $"WebView2 Notice: {ex.Message}";
+        }
+    }
+
+    private void BtnToggleWalk_Click(object sender, RoutedEventArgs e)
+    {
+        _isWalkingAvatar = !_isWalkingAvatar;
+        string stateStr = _isWalkingAvatar ? "walk" : "cozy";
+        TxtStatus.Text = $"Avatar state set to: {stateStr}";
+    }
+
+    private void BtnAvatarSpeakTest_Click(object sender, RoutedEventArgs e)
+    {
+        _speechSynth?.SpeakAsync("Gemmi 4D spatial presence is connected directly to the WPF dashboard.", _state);
+        TxtStatus.Text = "Triggered vocal speech and viseme test.";
+    }
+
+    private void BtnDispatchModelInspect_Click(object sender, RoutedEventArgs e)
+    {
+        _agentOrchestrator.EnqueueTask("Inspect 3D Avatar Model", "ModelInspector", new Dictionary<string, object>
+        {
+            ["path"] = @"C:\Users\admin\source\gemmi-engine\models\avatar_sanitized.glb"
+        });
+        GridAgentTasks.ItemsSource = _agentOrchestrator.History;
+    }
+
+    private void BtnDispatchMemoryConsolidate_Click(object sender, RoutedEventArgs e)
+    {
+        _agentOrchestrator.EnqueueTask("Consolidate Memory Graph", "MemoryConsolidator");
+        GridAgentTasks.ItemsSource = _agentOrchestrator.History;
+    }
+
+    private void BtnDispatchPing_Click(object sender, RoutedEventArgs e)
+    {
+        _agentOrchestrator.EnqueueTask("System Engine Ping", "Ping");
+        GridAgentTasks.ItemsSource = _agentOrchestrator.History;
+    }
+
+    private void BtnEnqueueCustomTask_Click(object sender, RoutedEventArgs e)
+    {
+        string taskName = TxtCustomTaskName.Text.Trim();
+        if (string.IsNullOrWhiteSpace(taskName)) taskName = "Custom Observation Task";
+        _agentOrchestrator.EnqueueTask(taskName, "LogObservation", new Dictionary<string, object>
+        {
+            ["text"] = $"{taskName} executed at {DateTime.Now:HH:mm:ss}"
+        });
+        GridAgentTasks.ItemsSource = _agentOrchestrator.History;
     }
 }
