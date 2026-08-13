@@ -68,6 +68,13 @@ public class Step8SpatialGraphAndAvatarTest
         Console.WriteLine($"    • [VR/AR Room Mode     (Height: 1.75m)] -> Scaled Head Y: {scaledHead175m.Y:F2} meters | Math Invariant: Identical");
         Console.WriteLine($"    • [WebGL Giant Mode    (Height: 10.0m)] -> Scaled Head Y: {scaledHead1000m.Y:F2} meters | Math Invariant: Identical");
 
+        Console.WriteLine("\n -> Testing 3-Point Posture Anchor Vector System (Ground FP=0.0, Midway FP=1.0, Crown FP=2.0)...");
+        var postureAnchors = avatar.GetPostureAnchors();
+        Console.WriteLine($"    • Point 1 (Ground Contact Anchor  FP=0.0): {postureAnchors.GroundPoint}");
+        Console.WriteLine($"    • Point 2 (Midway Hips & Depth    FP=1.0): {postureAnchors.MidwayPoint} (Z=1.0 Neutral Depth Baseline)");
+        Console.WriteLine($"    • Point 3 (Crown Zenith Anchor    FP=2.0): {postureAnchors.TopPoint}");
+        Console.WriteLine($"    • Calculated Avatar Posture Stance      : {postureAnchors.StanceSummary}");
+
         Console.WriteLine("\n -> Simulating Code Fix Clear Event...");
         avatar.OnSpatialVisionPerception("Build succeeded. 0 Warning(s) 0 Error(s)", false);
 

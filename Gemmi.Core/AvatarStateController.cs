@@ -20,6 +20,16 @@ public class JointTransform3D
     public override string ToString() => $"({X:F2}, {Y:F2}, {Z:F2})";
 }
 
+public struct PostureAnchorPoints3D
+{
+    public JointTransform3D GroundPoint { get; set; }  // Point 1: Ground Contact (FP = 0.0f)
+    public JointTransform3D MidwayPoint { get; set; }  // Point 2: Hips Center / Depth Anchor (FP = 1.0f, Z = 1.0f)
+    public JointTransform3D TopPoint { get; set; }     // Point 3: Crown Zenith (FP = 2.0f)
+
+    public bool IsErectStanding => MathF.Abs(MidwayPoint.X) < 0.15f && MathF.Abs(TopPoint.Y - 2.0f) < 0.15f;
+    public string StanceSummary => IsErectStanding ? "Standing Erect (Neutral Balance)" : "Leaning / Seated Stance";
+}
+
 public class LimbArmatureNode
 {
     public string Name { get; set; } = string.Empty;
@@ -101,6 +111,17 @@ public class AvatarStateController
             X = normalizedTransform.X * scaleFactor,
             Y = normalizedTransform.Y * scaleFactor,
             Z = normalizedTransform.Z * scaleFactor
+        };
+    }
+
+    // 3-Point Posture Anchor Vector System: Point 1 (Floor FP=0.0), Point 2 (Midway Hips FP=1.0, Z=1.0), Point 3 (Crown FP=2.0)
+    public PostureAnchorPoints3D GetPostureAnchors()
+    {
+        return new PostureAnchorPoints3D
+        {
+            GroundPoint = GroundFeetTransform,
+            MidwayPoint = new JointTransform3D { X = SpineTransform.X, Y = MidpointHipsTransform.Y, Z = 1.0f + SpineTransform.Z },
+            TopPoint = TopOfHeadTransform
         };
     }
 
