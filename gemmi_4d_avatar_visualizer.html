@@ -479,6 +479,15 @@
             hipsY: 0.97
         };
 
+        const currentMorphs = {
+            jawOpen: 0.0,
+            mouthSmileLeft: 0.2,
+            mouthSmileRight: 0.2,
+            eyeBlinkLeft: 0.0,
+            eyeBlinkRight: 0.0,
+            browInnerUp: 0.1
+        };
+
         // 15-Point Wireframe Spheres
         const skeletonGroup = new THREE.Group();
         scene.add(skeletonGroup);
@@ -567,6 +576,14 @@
                         const data = JSON.parse(evt.data);
                         if (data.currentLocomotionState) {
                             setAvatarState(data.currentLocomotionState.toLowerCase().includes('walk') ? 'walk' : 'cozy');
+                        }
+                        if (data.morphWeights) {
+                            for (let [k, v] of Object.entries(data.morphWeights)) {
+                                currentMorphs[k] = v;
+                            }
+                            if (document.getElementById('jaw-val') && data.morphWeights.jawOpen !== undefined) {
+                                document.getElementById('jaw-val').innerText = (data.morphWeights.jawOpen * 100).toFixed(0) + '%';
+                            }
                         }
                     } catch (e) { }
                 };
@@ -717,6 +734,24 @@
                 const lKneeBone = bones['J_Bip_L_LowerLeg'] || bones['LeftLeg'] || bones['LeftLowerLeg'];
                 if (rKneeBone) rKneeBone.rotation.x = -THREE.MathUtils.degToRad(jointRotations.knees);
                 if (lKneeBone) lKneeBone.rotation.x = -THREE.MathUtils.degToRad(jointRotations.knees);
+
+                // Apply Live Facial Morph Target Influences (Lip-Sync Visemes & Blinking)
+                avatarModel.traverse(child => {
+                    if (child.isMesh && child.morphTargetInfluences && child.morphTargetDictionary) {
+                        const dict = child.morphTargetDictionary;
+                        for (let [k, v] of Object.entries(currentMorphs)) {
+                            let idx = dict[k];
+                            if (idx === undefined) idx = dict[k.toLowerCase()];
+                            if (idx === undefined && k === 'jawOpen') idx = dict['Fcl_MTH_O'] ?? dict['mouth_a'] ?? dict['A'];
+                            if (idx === undefined && k === 'mouthSmileLeft') idx = dict['Fcl_MTH_Joy'] ?? dict['mouth_smile'] ?? dict['Joy'];
+                            if (idx === undefined && k === 'eyeBlinkLeft') idx = dict['Fcl_EYE_Close'] ?? dict['eye_blink_left'] ?? dict['Blink_L'] ?? dict['Blink'];
+                            if (idx === undefined && k === 'eyeBlinkRight') idx = dict['Fcl_EYE_Close'] ?? dict['eye_blink_right'] ?? dict['Blink_R'] ?? dict['Blink'];
+                            if (idx !== undefined) {
+                                child.morphTargetInfluences[idx] = v;
+                            }
+                        }
+                    }
+                });
             }
 
             // Snap 15-Point Matrix spheres DIRECTLY onto 3D VRoid Skeleton Bones 100% flush!

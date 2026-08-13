@@ -17,6 +17,7 @@ public class SpatialTelemetryFrame
     public long TimestampMs { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     public int FrameIndex { get; set; }
     public Dictionary<string, float[]> Joints { get; set; } = new(); // 15-Point Matrix [X, Y, Z, RotX, RotY, RotZ]
+    public Dictionary<string, float> MorphWeights { get; set; } = new(); // FACS Blendshapes (jawOpen, mouthSmile, eyeBlink)
     public float[] CameraPosition { get; set; } = new float[] { 0, 1.5f, 3.0f };
     public float[] CameraRotation { get; set; } = new float[] { 0, 0, 0 };
     public string CurrentLocomotionState { get; set; } = "Idle";

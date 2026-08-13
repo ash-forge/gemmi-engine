@@ -42,8 +42,9 @@ public class GemmiLiveSystemHost
         camSensor.StartCapture(0, 640, 480);
 
         // 3. Initialize Core Engines
-        Console.WriteLine("\n[3] Initializing Avatar Locomotion, 3D Audio & Vision Engines...");
+        Console.WriteLine("\n[3] Initializing Avatar Locomotion, 3D Audio, Vision & Facial Viseme Engines...");
         var avatar = new AvatarStateController();
+        var facialEngine = new GemmiFacialAnimationEngine();
         var audioEngine = new GemmiSpatialAudioEngine();
         var collisionEngine = new SpatialCollisionEngine();
         var visionEngine = new GemmiSpatialVisionEngine(collisionEngine);
@@ -72,6 +73,14 @@ public class GemmiLiveSystemHost
 
             string stateStr = MathF.Abs(MathF.Sin(walkProgress)) > 0.3f ? "WalkingLocomotion" : "CozyChairListeningMusic";
 
+            // Trigger speech viseme demo every 500 frames (~8 seconds)
+            if (frameIdx % 500 == 1)
+            {
+                facialEngine.StartSpeechAnimation("Hello Daniel, Sovereign Gemmi Spatial AI is fully active and listening.", 3.5f);
+            }
+
+            var morphs = facialEngine.Update(0.016f, stateStr);
+
             // Get 15-Point Spatial Matrix
             avatar.SpineTransform.X = currentX;
             avatar.SpineTransform.Z = currentZ;
@@ -88,6 +97,7 @@ public class GemmiLiveSystemHost
                 FrameIndex = frameIdx,
                 CurrentLocomotionState = stateStr,
                 CurrentSpeed = 1.2f,
+                MorphWeights = morphs.ToDictionary(),
                 CameraPosition = new float[] { currentX, 1.6f, currentZ + 3.0f },
                 CameraRotation = new float[] { 0, 0, 0 }
             };
