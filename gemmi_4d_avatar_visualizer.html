@@ -553,8 +553,8 @@
 
             // Handle Action Presets
             if (activeAction === 'wave') {
-                // High Wave above shoulder (90° to 140° in the air!)
-                jointRotations.rArm = 110 + Math.sin(time * 8) * 30;
+                // Wave above T-pose baseline (40° to 90° above horizontal!)
+                jointRotations.rArm = 65 + Math.sin(time * 8) * 25;
                 document.getElementById('r-arm-slider').value = jointRotations.rArm;
                 document.getElementById('r-arm-val').innerText = `${jointRotations.rArm.toFixed(0)}°`;
             } else if (activeAction === 'bow') {
@@ -566,8 +566,8 @@
                 document.getElementById('head-yaw-slider').value = jointRotations.headYaw;
                 document.getElementById('head-yaw-val').innerText = `${jointRotations.headYaw.toFixed(0)}°`;
             } else if (activeAction === 'dance') {
-                jointRotations.rArm = 60 + Math.sin(time * 5) * 50;
-                jointRotations.lArm = 60 + Math.cos(time * 5) * 50;
+                jointRotations.rArm = Math.sin(time * 5) * 60;
+                jointRotations.lArm = Math.cos(time * 5) * 60;
                 jointRotations.headYaw = Math.sin(time * 4) * 25;
                 spineX = Math.sin(time * 2) * 0.3;
                 document.getElementById('r-arm-slider').value = jointRotations.rArm;
@@ -585,20 +585,20 @@
                 spineY = jointRotations.hipsY;
             }
 
-            // Apply Rotations to 3D VRoid Skeleton Bones (Normalized: 0° = Rest at sides, +90° = Raised High)
+            // Apply Rotations to 3D VRoid Skeleton Bones (0° = T-Pose Baseline)
             if (avatarModel) {
                 avatarModel.position.set(spineX, spineY - 0.97, spineZ);
 
-                // Right Arm: 0° = Arm resting straight DOWN by side, 80° = Horizontal T-pose, 160° = Raised High Waving!
+                // Right Arm: 0° = T-Pose Baseline, -90° = Down by side, +90° = Raised High Waving!
                 const rArmBone = bones['J_Bip_R_UpperArm'] || bones['RightArm'] || bones['RightShoulder'] || bones['RightUpperArm'];
                 if (rArmBone) {
-                    rArmBone.rotation.z = THREE.MathUtils.degToRad(-80 + jointRotations.rArm);
+                    rArmBone.rotation.z = -THREE.MathUtils.degToRad(jointRotations.rArm);
                 }
 
-                // Left Arm: 0° = Arm resting straight DOWN by side, 80° = Horizontal T-pose, 160° = Raised High!
+                // Left Arm: 0° = T-Pose Baseline, -90° = Down by side, +90° = Raised High!
                 const lArmBone = bones['J_Bip_L_UpperArm'] || bones['LeftArm'] || bones['LeftShoulder'] || bones['LeftUpperArm'];
                 if (lArmBone) {
-                    lArmBone.rotation.z = THREE.MathUtils.degToRad(80 - jointRotations.lArm);
+                    lArmBone.rotation.z = THREE.MathUtils.degToRad(jointRotations.lArm);
                 }
 
                 // Head Yaw
