@@ -71,7 +71,8 @@ public class AvatarStateController
 
     public AvatarState CurrentState { get; private set; } = AvatarState.CozyChairListeningMusic;
 
-    // 7-DOF Core Joint Transformations relative to origin (Midpoint Hips = 1.0f, Top of Head = 2.0f)
+    // 7-DOF Core Joint Transformations relative to origin (Ground Feet = 0.0f, Midpoint Hips = 1.0f, Top of Head = 2.0f)
+    public JointTransform3D GroundFeetTransform { get; } = new() { X = 0.0f, Y = 0.0f, Z = 0.0f };
     public JointTransform3D MidpointHipsTransform { get; } = new() { X = 0.0f, Y = 1.0f, Z = 0.0f };
     public JointTransform3D SpineTransform { get; } = new() { X = 0.0f, Y = 1.35f, Z = 0.0f };
     public JointTransform3D HeadTransform { get; } = new() { X = 0.0f, Y = 1.85f, Z = 0.0f };
@@ -80,6 +81,16 @@ public class AvatarStateController
     // Symmetrical Armature Sub-Sets (Left Shoulder = +1.85f, Right Shoulder = -1.85f)
     public ArmSubSet LeftArm { get; } = new(1.85f);
     public ArmSubSet RightArm { get; } = new(-1.85f);
+
+    public JointTransform3D ComputePositionFromCenterOfMass(float deltaX, float deltaY, float deltaZ)
+    {
+        return new JointTransform3D
+        {
+            X = MidpointHipsTransform.X + deltaX,
+            Y = MidpointHipsTransform.Y + deltaY,
+            Z = MidpointHipsTransform.Z + deltaZ
+        };
+    }
 
     public string CurrentActivity { get; private set; } = "Sipping coffee, listening to lofi ambient tracks 🎧☕";
     public bool ProactiveAssistanceTriggered { get; private set; }

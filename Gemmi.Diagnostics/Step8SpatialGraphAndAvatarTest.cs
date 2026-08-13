@@ -46,10 +46,13 @@ public class Step8SpatialGraphAndAvatarTest
         Console.WriteLine($"    • Current Activity   : {avatar.CurrentActivity}");
         Console.WriteLine($"    • Unit Height Bounding: {AvatarStateController.NormalizedUnitHeight:F1}f (Whole Body Unit Bounds)");
         Console.WriteLine($"    • Top of Head Target  : {avatar.TopOfHeadTransform} (Y = 2.00f)");
-        Console.WriteLine($"    • Midpoint Hips Target: {avatar.MidpointHipsTransform} (Y = 1.00f)");
+        Console.WriteLine($"    • Midpoint Hips Target: {avatar.MidpointHipsTransform} (Y = 1.00f - Center of Mass Anchor)");
+        Console.WriteLine($"    • Ground Feet Plane   : {avatar.GroundFeetTransform} (Y = 0.00f - Ground Contact)");
         Console.WriteLine($"    • Spine Pose          : {avatar.SpineTransform}");
         Console.WriteLine($"    • Left Shoulder       : {avatar.LeftArm.Shoulder} (X = +1.85f)");
         Console.WriteLine($"    • Right Shoulder      : {avatar.RightArm.Shoulder} (X = -1.85f)");
+        var offsetHand = avatar.ComputePositionFromCenterOfMass(0.23f, -0.05f, 0.40f);
+        Console.WriteLine($"    • Hand Vector from Center of Mass (ΔX=0.23, ΔY=-0.05, ΔZ=0.40): {offsetHand}");
         var rightElbowWorld = avatar.RightArm.Elbow.ComputeWorldPosition(avatar.RightArm.Shoulder);
         Console.WriteLine($"    • Right Elbow World Position: {rightElbowWorld} (Holding Coffee)");
 
