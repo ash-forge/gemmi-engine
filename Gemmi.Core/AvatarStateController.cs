@@ -67,11 +67,15 @@ public class ArmSubSet
 
 public class AvatarStateController
 {
+    public const float NormalizedUnitHeight = 2.0f; // Whole Body Unit Height Bounding Box
+
     public AvatarState CurrentState { get; private set; } = AvatarState.CozyChairListeningMusic;
 
-    // 7-DOF Core Joint Transformations relative to origin (Midpoint = 1.0f)
-    public JointTransform3D SpineTransform { get; } = new() { X = 0.0f, Y = 1.0f, Z = 0.0f };
-    public JointTransform3D HeadTransform { get; } = new() { X = 0.0f, Y = 1.65f, Z = 0.0f };
+    // 7-DOF Core Joint Transformations relative to origin (Midpoint Hips = 1.0f, Top of Head = 2.0f)
+    public JointTransform3D MidpointHipsTransform { get; } = new() { X = 0.0f, Y = 1.0f, Z = 0.0f };
+    public JointTransform3D SpineTransform { get; } = new() { X = 0.0f, Y = 1.35f, Z = 0.0f };
+    public JointTransform3D HeadTransform { get; } = new() { X = 0.0f, Y = 1.85f, Z = 0.0f };
+    public JointTransform3D TopOfHeadTransform { get; } = new() { X = 0.0f, Y = 2.0f, Z = 0.0f };
 
     // Symmetrical Armature Sub-Sets (Left Shoulder = +1.85f, Right Shoulder = -1.85f)
     public ArmSubSet LeftArm { get; } = new(1.85f);

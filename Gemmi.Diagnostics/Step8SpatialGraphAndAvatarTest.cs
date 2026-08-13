@@ -43,10 +43,13 @@ public class Step8SpatialGraphAndAvatarTest
         };
 
         Console.WriteLine("\n -> Initial State (Cozy Chair Listening to Lofi Music):");
-        Console.WriteLine($"    • Current Activity: {avatar.CurrentActivity}");
-        Console.WriteLine($"    • Spine Pose      : {avatar.SpineTransform}");
-        Console.WriteLine($"    • Left Shoulder   : {avatar.LeftArm.Shoulder} (X = +1.85f)");
-        Console.WriteLine($"    • Right Shoulder  : {avatar.RightArm.Shoulder} (X = -1.85f)");
+        Console.WriteLine($"    • Current Activity   : {avatar.CurrentActivity}");
+        Console.WriteLine($"    • Unit Height Bounding: {AvatarStateController.NormalizedUnitHeight:F1}f (Whole Body Unit Bounds)");
+        Console.WriteLine($"    • Top of Head Target  : {avatar.TopOfHeadTransform} (Y = 2.00f)");
+        Console.WriteLine($"    • Midpoint Hips Target: {avatar.MidpointHipsTransform} (Y = 1.00f)");
+        Console.WriteLine($"    • Spine Pose          : {avatar.SpineTransform}");
+        Console.WriteLine($"    • Left Shoulder       : {avatar.LeftArm.Shoulder} (X = +1.85f)");
+        Console.WriteLine($"    • Right Shoulder      : {avatar.RightArm.Shoulder} (X = -1.85f)");
         var rightElbowWorld = avatar.RightArm.Elbow.ComputeWorldPosition(avatar.RightArm.Shoulder);
         Console.WriteLine($"    • Right Elbow World Position: {rightElbowWorld} (Holding Coffee)");
 
