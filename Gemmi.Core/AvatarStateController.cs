@@ -42,6 +42,18 @@ public struct SpatiotemporalTransform4D
     public override string ToString() => $"[4D Space-Time] Vector3D: {SpatialVector3D} | Time: {Timestamp:HH:mm:ss.fff} | State: {ActiveState}";
 }
 
+public struct SpatialRadarBlip3D
+{
+    public string ObjectConcept { get; set; }
+    public MemoryCategory Category { get; set; }
+    public float DistanceMeters { get; set; }
+    public float AzimuthDegrees { get; set; }   // Polar Angle θ (0° = Forward, +90° = Right, -90° = Left)
+    public float ElevationDegrees { get; set; } // Pitch Angle φ
+    public (float X, float Y, float Z) Vector { get; set; }
+
+    public override string ToString() => $"[RADAR BLIP] {ObjectConcept,-25} | Distance: {DistanceMeters:F2}m | Bearing: {AzimuthDegrees:F1}° | Vector: ({Vector.X:F2}, {Vector.Y:F2}, {Vector.Z:F2})";
+}
+
 public class LimbArmatureNode
 {
     public string Name { get; set; } = string.Empty;
@@ -172,6 +184,40 @@ public class AvatarStateController
             ActiveState = CurrentState,
             Anchors = GetPostureAnchors()
         };
+    }
+
+    // 3D Spatial Perception Radar Sweep System (Sweeps 360° environment vector grid for nearby objects)
+    public List<SpatialRadarBlip3D> Execute3DSpatialRadarSweep(EpisodicMemoryGraph memoryGraph, float maxRadiusMeters = 3.0f)
+    {
+        var blips = new List<SpatialRadarBlip3D>();
+        var avatarPos = SpineTransform;
+
+        var nearbyNodes = memoryGraph.GetConceptsBySpatialProximity(avatarPos.X, avatarPos.Y, avatarPos.Z, maxRadiusMeters);
+
+        foreach (var (node, distance) in nearbyNodes)
+        {
+            float dx = node.SpatialVector.X - avatarPos.X;
+            float dy = node.SpatialVector.Y - avatarPos.Y;
+            float dz = node.SpatialVector.Z - avatarPos.Z;
+
+            float azimuthRad = MathF.Atan2(dx, dz);
+            float azimuthDeg = azimuthRad * (180.0f / MathF.PI);
+
+            float elevationRad = MathF.Asin(Math.Clamp(dy / (distance > 0 ? distance : 1.0f), -1.0f, 1.0f));
+            float elevationDeg = elevationRad * (180.0f / MathF.PI);
+
+            blips.Add(new SpatialRadarBlip3D
+            {
+                ObjectConcept = node.Concept,
+                Category = node.Category,
+                DistanceMeters = distance,
+                AzimuthDegrees = azimuthDeg,
+                ElevationDegrees = elevationDeg,
+                Vector = node.SpatialVector
+            });
+        }
+
+        return blips;
     }
 
     public string CurrentActivity { get; private set; } = "Sipping coffee, listening to lofi ambient tracks 🎧☕";
