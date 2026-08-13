@@ -66,23 +66,12 @@ public class GemmiAvatarStudio
         var binStream = new MemoryStream();
         var binWriter = new BinaryWriter(binStream);
 
+        var jsonChildIndices = new JsonArray();
+        for (int i = 1; i <= builder.SubMeshes.Count; i++) jsonChildIndices.Add(i);
+
         var jsonNodesArray = new JsonArray
         {
-            new JsonObject { ["name"] = "Gemmi_Avatar_Root", ["children"] = new JsonArray { 1 } },
-            new JsonObject { ["name"] = "Hips_Center", ["translation"] = new JsonArray { 0.0, 0.97, 0.0 } },
-            new JsonObject { ["name"] = "Left_Foot", ["translation"] = new JsonArray { 0.07, 0.10, 0.02 } },
-            new JsonObject { ["name"] = "Right_Foot", ["translation"] = new JsonArray { -0.07, 0.10, 0.02 } },
-            new JsonObject { ["name"] = "Left_Knee", ["translation"] = new JsonArray { 0.06, 0.52, 0.0 } },
-            new JsonObject { ["name"] = "Right_Knee", ["translation"] = new JsonArray { -0.06, 0.52, 0.0 } },
-            new JsonObject { ["name"] = "Left_Thigh", ["translation"] = new JsonArray { 0.07, 0.88, 0.0 } },
-            new JsonObject { ["name"] = "Right_Thigh", ["translation"] = new JsonArray { -0.07, 0.88, 0.0 } },
-            new JsonObject { ["name"] = "Spine_Chest", ["translation"] = new JsonArray { 0.0, 1.25, 0.0 } },
-            new JsonObject { ["name"] = "Left_Shoulder", ["translation"] = new JsonArray { 0.22, 1.35, 0.0 } },
-            new JsonObject { ["name"] = "Right_Shoulder", ["translation"] = new JsonArray { -0.22, 1.35, 0.0 } },
-            new JsonObject { ["name"] = "Neck_Base", ["translation"] = new JsonArray { 0.0, 1.45, 0.0 } },
-            new JsonObject { ["name"] = "Head_Center", ["translation"] = new JsonArray { 0.0, 1.55, 0.0 } },
-            new JsonObject { ["name"] = "Crown_Top", ["translation"] = new JsonArray { 0.0, 1.70, 0.0 } },
-            new JsonObject { ["name"] = "Crown_Zenith", ["translation"] = new JsonArray { 0.0, 1.85, 0.0 } }
+            new JsonObject { ["name"] = "Gemmi_Avatar_Root", ["children"] = jsonChildIndices }
         };
 
         var jsonMeshesArray = new JsonArray();
@@ -104,15 +93,25 @@ public class GemmiAvatarStudio
                 ["pbrMetallicRoughness"] = new JsonObject
                 {
                     ["baseColorFactor"] = new JsonArray { subMesh.BaseColor.R, subMesh.BaseColor.G, subMesh.BaseColor.B, subMesh.BaseColor.A },
-                    ["metallicFactor"] = 0.3,
-                    ["roughnessFactor"] = 0.3
+                    ["metallicFactor"] = 0.2,
+                    ["roughnessFactor"] = 0.4
                 }
             });
 
-            // 1. Write POSITION Buffer
+            float minX = float.MaxValue, minY = float.MaxValue, minZ = float.MaxValue;
+            float maxX = float.MinValue, maxY = float.MinValue, maxZ = float.MinValue;
+
+            // 1. Write POSITION Buffer & Calculate Min/Max Bounds
             int posOffset = currentBufferOffset;
             foreach (var v in subMesh.Vertices)
             {
+                if (v.Position.X < minX) minX = v.Position.X;
+                if (v.Position.Y < minY) minY = v.Position.Y;
+                if (v.Position.Z < minZ) minZ = v.Position.Z;
+                if (v.Position.X > maxX) maxX = v.Position.X;
+                if (v.Position.Y > maxY) maxY = v.Position.Y;
+                if (v.Position.Z > maxZ) maxZ = v.Position.Z;
+
                 binWriter.Write(v.Position.X);
                 binWriter.Write(v.Position.Y);
                 binWriter.Write(v.Position.Z);
@@ -159,14 +158,23 @@ public class GemmiAvatarStudio
             jsonBufferViewsArray.Add(new JsonObject { ["buffer"] = 0, ["byteOffset"] = uvOffset, ["byteLength"] = uvLength, ["target"] = 34962 });
             jsonBufferViewsArray.Add(new JsonObject { ["buffer"] = 0, ["byteOffset"] = idxOffset, ["byteLength"] = idxLength, ["target"] = 34963 }); // ELEMENT_ARRAY_BUFFER
 
-            // Register Accessors
+            // Register Accessors with REQUIRED POSITION Min/Max Bounds
             int accPos = jsonAccessorsArray.Count;
-            jsonAccessorsArray.Add(new JsonObject { ["bufferView"] = bvPos, ["componentType"] = 5126, ["count"] = vertCount, ["type"] = "VEC3" }); // FLOAT
+            jsonAccessorsArray.Add(new JsonObject
+            {
+                ["bufferView"] = bvPos,
+                ["componentType"] = 5126,
+                ["count"] = vertCount,
+                ["type"] = "VEC3",
+                ["min"] = new JsonArray { minX, minY, minZ },
+                ["max"] = new JsonArray { maxX, maxY, maxZ }
+            });
             jsonAccessorsArray.Add(new JsonObject { ["bufferView"] = bvPos + 1, ["componentType"] = 5126, ["count"] = vertCount, ["type"] = "VEC3" });
             jsonAccessorsArray.Add(new JsonObject { ["bufferView"] = bvPos + 2, ["componentType"] = 5126, ["count"] = vertCount, ["type"] = "VEC2" });
-            jsonAccessorsArray.Add(new JsonObject { ["bufferView"] = bvPos + 3, ["componentType"] = 5123, ["count"] = idxCount, ["type"] = "SCALAR" }); // UNSIGNED_SHORT
+            jsonAccessorsArray.Add(new JsonObject { ["bufferView"] = bvPos + 3, ["componentType"] = 5123, ["count"] = idxCount, ["type"] = "SCALAR" });
 
-            // Register Primitive Mesh
+            // Register Mesh & Node
+            int meshIdx = jsonMeshesArray.Count;
             jsonMeshesArray.Add(new JsonObject
             {
                 ["name"] = subMesh.Name,
@@ -185,6 +193,12 @@ public class GemmiAvatarStudio
                     }
                 }
             });
+
+            jsonNodesArray.Add(new JsonObject
+            {
+                ["name"] = subMesh.Name,
+                ["mesh"] = meshIdx
+            });
         }
 
         byte[] binData = binStream.ToArray();
@@ -194,7 +208,7 @@ public class GemmiAvatarStudio
         {
             ["asset"] = new JsonObject
             {
-                ["generator"] = "Gemmi-Sovereign-3D-Avatar-Studio-v2.0",
+                ["generator"] = "Gemmi-Sovereign-3D-Avatar-Studio-v2.5",
                 ["version"] = "2.0"
             },
             ["scene"] = 0,
