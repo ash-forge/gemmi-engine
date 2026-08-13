@@ -589,16 +589,16 @@
             if (avatarModel) {
                 avatarModel.position.set(spineX, spineY - 0.97, spineZ);
 
-                // Right Arm: 0° = T-Pose Baseline, -90° = Down by side, +90° = Raised High Waving!
+                // Right Arm: 0° = T-Pose Baseline, +90° = Raised UP in the air, -90° = Down to side of body!
                 const rArmBone = bones['J_Bip_R_UpperArm'] || bones['RightArm'] || bones['RightShoulder'] || bones['RightUpperArm'];
                 if (rArmBone) {
-                    rArmBone.rotation.z = -THREE.MathUtils.degToRad(jointRotations.rArm);
+                    rArmBone.rotation.z = THREE.MathUtils.degToRad(jointRotations.rArm);
                 }
 
-                // Left Arm: 0° = T-Pose Baseline, -90° = Down by side, +90° = Raised High!
+                // Left Arm: 0° = T-Pose Baseline, +90° = Raised UP in the air, -90° = Down to side of body!
                 const lArmBone = bones['J_Bip_L_UpperArm'] || bones['LeftArm'] || bones['LeftShoulder'] || bones['LeftUpperArm'];
                 if (lArmBone) {
-                    lArmBone.rotation.z = THREE.MathUtils.degToRad(jointRotations.lArm);
+                    lArmBone.rotation.z = -THREE.MathUtils.degToRad(jointRotations.lArm);
                 }
 
                 // Head Yaw
