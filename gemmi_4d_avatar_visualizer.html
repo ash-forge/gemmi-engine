@@ -536,14 +536,23 @@
                 }
             }
 
-            // Update 15-Point Wireframe Spheres Position
+            // Update 15-Point Wireframe Spheres Position (Aligned 1-to-1 with VRoid Character Bones)
             const p = [
-                [0, 0, 0], [0.35, 0.15, -0.02], [-0.35, 0.15, -0.02],
-                [0.35, 0.50, 0.05], [-0.35, 0.50, 0.05], [spineX, spineY, spineZ],
-                [spineX + 0.35, spineY, spineZ], [spineX - 0.35, spineY, spineZ],
-                [spineX, spineY + 0.35, spineZ], [spineX + 0.55, spineY + 0.45, spineZ],
-                [spineX - 0.55, spineY + 0.45, spineZ], [spineX, spineY + 0.65, spineZ],
-                [spineX, spineY + 0.85, spineZ], [spineX, spineY + 1.00, spineZ], [spineX, spineY + 1.15, spineZ]
+                [spineX, 0.0, spineZ],                           // 1. Center Ground Origin
+                [spineX + 0.07, 0.10, spineZ + 0.02],            // 2. Left Ankle
+                [spineX - 0.07, 0.10, spineZ + 0.02],            // 3. Right Ankle
+                [spineX + 0.06, 0.52, spineZ],                   // 4. Left Knee
+                [spineX - 0.06, 0.52, spineZ],                   // 5. Right Knee
+                [spineX, spineY - 0.03, spineZ],                 // 6. Hips Pelvis Center (Y = 0.97m)
+                [spineX + 0.07, spineY - 0.12, spineZ],          // 7. Left Hip
+                [spineX - 0.07, spineY - 0.12, spineZ],          // 8. Right Hip
+                [spineX, spineY + 0.25, spineZ],                 // 9. Spine Chest (Y = 1.25m)
+                [spineX + 0.22, spineY + 0.35, spineZ],          // 10. Left Shoulder (Y = 1.35m)
+                [spineX - 0.22, spineY + 0.35, spineZ],          // 11. Right Shoulder (Y = 1.35m)
+                [spineX, spineY + 0.45, spineZ],                 // 12. Neck Base (Y = 1.45m)
+                [spineX, spineY + 0.55, spineZ],                 // 13. Head Center (Y = 1.55m)
+                [spineX, spineY + 0.70, spineZ],                 // 14. Crown Top (Y = 1.70m)
+                [spineX, spineY + 0.85, spineZ]                  // 15. Crown Zenith (Y = 1.85m)
             ];
 
             for (let i = 0; i < 15; i++) {

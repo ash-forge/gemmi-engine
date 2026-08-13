@@ -34,17 +34,17 @@ public struct PostureAnchorPoints3D
 public struct TwelvePointSpatialAnchors3D
 {
     public JointTransform3D P1_GroundCenter { get; set; }      // 1. Floor Origin (0.00, 0.00, 0.00)
-    public JointTransform3D P2_LeftAnkleBase { get; set; }      // 2. Left Ankle Base (+0.35, 0.15, -0.02)
-    public JointTransform3D P3_RightAnkleBase { get; set; }     // 3. Right Ankle Base (-0.35, 0.15, -0.02)
-    public JointTransform3D P4_LeftKneePivot { get; set; }      // 4. Left Knee Pivot (+0.35, 0.50, 0.05)
-    public JointTransform3D P5_RightKneePivot { get; set; }     // 5. Right Knee Pivot (-0.35, 0.50, 0.05)
-    public JointTransform3D P6_CenterOfMassHips { get; set; }   // 6. Center of Mass Hips (0.00, 1.00, 0.00)
-    public JointTransform3D P7_SpineChestCenter { get; set; }   // 7. Spine Chest Center (0.00, 1.35, 0.00)
-    public JointTransform3D P8_LeftShoulderAnchor { get; set; } // 8. Left Shoulder (+1.85, 1.45, 0.00)
-    public JointTransform3D P9_RightShoulderAnchor { get; set; }// 9. Right Shoulder (-1.85, 1.45, 0.00)
-    public JointTransform3D P10_NeckBase { get; set; }         // 10. Neck Base (0.00, 1.65, 0.00)
-    public JointTransform3D P11_HeadCenter { get; set; }        // 11. Head Center (0.00, 1.85, 0.00)
-    public JointTransform3D P12_CrownZenithTop { get; set; }    // 12. Crown Zenith Top (0.00, 2.00, 0.00)
+    public JointTransform3D P2_LeftAnkleBase { get; set; }      // 2. Left Ankle Base (+0.07, 0.10, 0.02)
+    public JointTransform3D P3_RightAnkleBase { get; set; }     // 3. Right Ankle Base (-0.07, 0.10, 0.02)
+    public JointTransform3D P4_LeftKneePivot { get; set; }      // 4. Left Knee Pivot (+0.06, 0.52, 0.00)
+    public JointTransform3D P5_RightKneePivot { get; set; }     // 5. Right Knee Pivot (-0.06, 0.52, 0.00)
+    public JointTransform3D P6_CenterOfMassHips { get; set; }   // 6. Center of Mass Hips (0.00, 0.97, 0.00)
+    public JointTransform3D P7_SpineChestCenter { get; set; }   // 7. Spine Chest Center (0.00, 1.25, 0.00)
+    public JointTransform3D P8_LeftShoulderAnchor { get; set; } // 8. Left Shoulder (+0.22, 1.35, 0.00)
+    public JointTransform3D P9_RightShoulderAnchor { get; set; }// 9. Right Shoulder (-0.22, 1.35, 0.00)
+    public JointTransform3D P10_NeckBase { get; set; }         // 10. Neck Base (0.00, 1.45, 0.00)
+    public JointTransform3D P11_HeadCenter { get; set; }        // 11. Head Center (0.00, 1.55, 0.00)
+    public JointTransform3D P12_CrownZenithTop { get; set; }    // 12. Crown Zenith Top (0.00, 1.70, 0.00)
 
     public override string ToString() => $"[12-POINT ANCHOR SYSTEM] P1(Floor):{P1_GroundCenter} | P6(Hips):{P6_CenterOfMassHips} | P8/P9(Shoulders):L{P8_LeftShoulderAnchor}/R{P9_RightShoulderAnchor} | P12(Crown):{P12_CrownZenithTop}";
 }
@@ -53,24 +53,24 @@ public struct FifteenPointSpatialMatrix3D
 {
     // Level 0: Ground Contact FP = 0.0f (5 Points)
     public JointTransform3D Level0_CenterGround { get; set; }  // 1. (0.00, 0.00, 0.00)
-    public JointTransform3D Level0_LeftFoot { get; set; }      // 2. (+0.35, 0.00, 0.12)
-    public JointTransform3D Level0_RightFoot { get; set; }     // 3. (-0.35, 0.00, 0.12)
-    public JointTransform3D Level0_LeftAnkle { get; set; }     // 4. (+0.35, 0.15, -0.02)
-    public JointTransform3D Level0_RightAnkle { get; set; }    // 5. (-0.35, 0.15, -0.02)
+    public JointTransform3D Level0_LeftFoot { get; set; }      // 2. (+0.07, 0.00, 0.12)
+    public JointTransform3D Level0_RightFoot { get; set; }     // 3. (-0.07, 0.00, 0.12)
+    public JointTransform3D Level0_LeftAnkle { get; set; }     // 4. (+0.07, 0.10, 0.02)
+    public JointTransform3D Level0_RightAnkle { get; set; }    // 5. (-0.07, 0.10, 0.02)
 
     // Level 1: Hips & Center of Mass FP = 1.0f (5 Points)
-    public JointTransform3D Level1_CenterHips { get; set; }   // 6. (0.00, 1.00, 0.00)
-    public JointTransform3D Level1_LeftKnee { get; set; }     // 7. (+0.35, 0.50, 0.05)
-    public JointTransform3D Level1_RightKnee { get; set; }    // 8. (-0.35, 0.50, 0.05)
-    public JointTransform3D Level1_LeftHip { get; set; }      // 9. (+0.35, 1.00, 0.00)
-    public JointTransform3D Level1_RightHip { get; set; }     // 10. (-0.35, 1.00, 0.00)
+    public JointTransform3D Level1_CenterHips { get; set; }   // 6. (0.00, 0.97, 0.00)
+    public JointTransform3D Level1_LeftKnee { get; set; }     // 7. (+0.06, 0.52, 0.00)
+    public JointTransform3D Level1_RightKnee { get; set; }    // 8. (-0.06, 0.52, 0.00)
+    public JointTransform3D Level1_LeftHip { get; set; }      // 9. (+0.06, 0.88, 0.00)
+    public JointTransform3D Level1_RightHip { get; set; }     // 10. (-0.06, 0.88, 0.00)
 
     // Level 2: Crown & Upper Body FP = 2.0f (5 Points)
-    public JointTransform3D Level2_SpineChest { get; set; }   // 11. (0.00, 1.35, 0.00)
-    public JointTransform3D Level2_LeftShoulder { get; set; } // 12. (+1.85, 1.45, 0.00)
-    public JointTransform3D Level2_RightShoulder { get; set; }// 13. (-1.85, 1.45, 0.00)
-    public JointTransform3D Level2_HeadCenter { get; set; }   // 14. (0.00, 1.85, 0.00)
-    public JointTransform3D Level2_CrownZenith { get; set; }   // 15. (0.00, 2.00, 0.00)
+    public JointTransform3D Level2_SpineChest { get; set; }   // 11. (0.00, 1.25, 0.00)
+    public JointTransform3D Level2_LeftShoulder { get; set; } // 12. (+0.22, 1.35, 0.00)
+    public JointTransform3D Level2_RightShoulder { get; set; }// 13. (-0.22, 1.35, 0.00)
+    public JointTransform3D Level2_HeadCenter { get; set; }   // 14. (0.00, 1.55, 0.00)
+    public JointTransform3D Level2_CrownZenith { get; set; }   // 15. (0.00, 1.70, 0.00)
 
     public override string ToString() => $"[15-POINT SPATIAL MATRIX] 3 FP Reference Planes (FP 0.0, 1.0, 2.0) | 15 Vector Anchors Active";
 }
@@ -178,13 +178,13 @@ public class AvatarStateController
     public JointTransform3D HeadTransform { get; } = new() { X = 0.0f, Y = 1.85f, Z = 0.0f };
     public JointTransform3D TopOfHeadTransform { get; } = new() { X = 0.0f, Y = 2.0f, Z = 0.0f };
 
-    // Upper Body Symmetrical Armature Sub-Sets (Left Shoulder = +1.85f, Right Shoulder = -1.85f)
-    public ArmSubSet LeftArm { get; } = new(1.85f);
-    public ArmSubSet RightArm { get; } = new(-1.85f);
+    // Upper Body Symmetrical Armature Sub-Sets (Left Shoulder = +0.22m, Right Shoulder = -0.22m)
+    public ArmSubSet LeftArm { get; } = new(0.22f, shoulderY: 1.35f);
+    public ArmSubSet RightArm { get; } = new(-0.22f, shoulderY: 1.35f);
 
-    // Lower Body Symmetrical Armature Sub-Sets (Left Hip = +0.35f, Right Hip = -0.35f)
-    public LegSubSet LeftLeg { get; } = new(0.35f);
-    public LegSubSet RightLeg { get; } = new(-0.35f);
+    // Lower Body Symmetrical Armature Sub-Sets (Left Hip = +0.07m, Right Hip = -0.07m)
+    public LegSubSet LeftLeg { get; } = new(0.07f, hipY: 0.88f);
+    public LegSubSet RightLeg { get; } = new(-0.07f, hipY: 0.88f);
 
     public JointTransform3D ComputePositionFromCenterOfMass(float deltaX, float deltaY, float deltaZ)
     {
