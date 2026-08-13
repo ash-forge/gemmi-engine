@@ -609,31 +609,34 @@
                 }
             }
 
-            // Update 15-Point Wireframe Spheres Position
-            const radRArm = THREE.MathUtils.degToRad(jointRotations.rArm);
-            const radLArm = THREE.MathUtils.degToRad(jointRotations.lArm);
-            const radSpine = THREE.MathUtils.degToRad(jointRotations.spine);
+            // Snap 15-Point Matrix spheres DIRECTLY onto 3D VRoid Skeleton Bones 100% flush!
+            const _tempVec = new THREE.Vector3();
+            function getBoneWorldPos(possibleNames, fallbackPos) {
+                for (let name of possibleNames) {
+                    if (bones[name]) {
+                        bones[name].getWorldPosition(_tempVec);
+                        return _tempVec.clone();
+                    }
+                }
+                return new THREE.Vector3(fallbackPos[0], fallbackPos[1], fallbackPos[2]);
+            }
 
-            const p = [
-                [spineX, 0.0, spineZ],                           // 1. Center Ground Origin
-                [spineX + 0.07, 0.10, spineZ + 0.02],            // 2. Left Ankle
-                [spineX - 0.07, 0.10, spineZ + 0.02],            // 3. Right Ankle
-                [spineX + 0.06, 0.52, spineZ],                   // 4. Left Knee
-                [spineX - 0.06, 0.52, spineZ],                   // 5. Right Knee
-                [spineX, spineY - 0.03, spineZ],                 // 6. Hips Pelvis Center (Y = 0.97m)
-                [spineX + 0.07, spineY - 0.12, spineZ],          // 7. Left Hip
-                [spineX - 0.07, spineY - 0.12, spineZ],          // 8. Right Hip
-                [spineX, spineY + 0.25, spineZ - radSpine*0.2],  // 9. Spine Chest (Y = 1.25m)
-                [spineX + 0.22, spineY + 0.35 + Math.sin(radLArm)*0.2, spineZ], // 10. Left Shoulder
-                [spineX - 0.22, spineY + 0.35 + Math.sin(radRArm)*0.2, spineZ], // 11. Right Shoulder
-                [spineX, spineY + 0.45, spineZ],                 // 12. Neck Base
-                [spineX, spineY + 0.55, spineZ],                 // 13. Head Center
-                [spineX, spineY + 0.70, spineZ],                 // 14. Crown Top
-                [spineX, spineY + 0.85, spineZ]                  // 15. Crown Zenith
-            ];
-
-            for (let i = 0; i < 15; i++) {
-                jointSpheres[i].position.set(p[i][0], p[i][1], p[i][2]);
+            if (avatarModel && Object.keys(bones).length > 0) {
+                jointSpheres[0].position.copy(getBoneWorldPos(['J_Bip_C_Hips', 'Hips'], [spineX, 0, spineZ])).setY(0.0);
+                jointSpheres[1].position.copy(getBoneWorldPos(['J_Bip_L_Foot', 'LeftFoot'], [spineX + 0.07, 0.10, spineZ]));
+                jointSpheres[2].position.copy(getBoneWorldPos(['J_Bip_R_Foot', 'RightFoot'], [spineX - 0.07, 0.10, spineZ]));
+                jointSpheres[3].position.copy(getBoneWorldPos(['J_Bip_L_LowerLeg', 'LeftLeg'], [spineX + 0.06, 0.52, spineZ]));
+                jointSpheres[4].position.copy(getBoneWorldPos(['J_Bip_R_LowerLeg', 'RightLeg'], [spineX - 0.06, 0.52, spineZ]));
+                jointSpheres[5].position.copy(getBoneWorldPos(['J_Bip_C_Hips', 'Hips'], [spineX, spineY - 0.03, spineZ]));
+                jointSpheres[6].position.copy(getBoneWorldPos(['J_Bip_L_UpperLeg', 'LeftUpLeg'], [spineX + 0.07, spineY - 0.12, spineZ]));
+                jointSpheres[7].position.copy(getBoneWorldPos(['J_Bip_R_UpperLeg', 'RightUpLeg'], [spineX - 0.07, spineY - 0.12, spineZ]));
+                jointSpheres[8].position.copy(getBoneWorldPos(['J_Bip_C_Chest', 'Spine', 'Chest'], [spineX, spineY + 0.25, spineZ]));
+                jointSpheres[9].position.copy(getBoneWorldPos(['J_Bip_L_UpperArm', 'LeftShoulder'], [spineX + 0.22, spineY + 0.35, spineZ]));
+                jointSpheres[10].position.copy(getBoneWorldPos(['J_Bip_R_UpperArm', 'RightShoulder'], [spineX - 0.22, spineY + 0.35, spineZ]));
+                jointSpheres[11].position.copy(getBoneWorldPos(['J_Bip_C_Neck', 'Neck'], [spineX, spineY + 0.45, spineZ]));
+                jointSpheres[12].position.copy(getBoneWorldPos(['J_Bip_C_Head', 'Head'], [spineX, spineY + 0.55, spineZ]));
+                jointSpheres[13].position.copy(getBoneWorldPos(['J_Bip_C_Head', 'Head'], [spineX, spineY + 0.70, spineZ])).add(new THREE.Vector3(0, 0.12, 0));
+                jointSpheres[14].position.copy(getBoneWorldPos(['J_Bip_C_Head', 'Head'], [spineX, spineY + 0.85, spineZ])).add(new THREE.Vector3(0, 0.25, 0));
             }
 
             // Telemetry Updates
