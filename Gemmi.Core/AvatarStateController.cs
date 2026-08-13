@@ -87,6 +87,27 @@ public class ArmSubSet
     }
 }
 
+public class LegSubSet
+{
+    public JointTransform3D Hip { get; set; } = new();
+    public LimbArmatureNode Knee { get; set; } = new() { Name = "Knee" };
+    public LimbArmatureNode Ankle { get; set; } = new() { Name = "Ankle" };
+    public LimbArmatureNode Foot { get; set; } = new() { Name = "Foot" };
+
+    public LegSubSet(float hipX, float hipY = 1.0f, float hipZ = 0.0f)
+    {
+        Hip = new JointTransform3D { X = hipX, Y = hipY, Z = hipZ };
+
+        // Link Lower Body Kinematic Chain: Hips (FP=1.0) -> Knees (FP=0.5) -> Ankles (FP=0.15) -> Feet Ground Contact (FP=0.0)
+        Knee.LocalOffset = new JointTransform3D { X = 0.0f, Y = -0.50f, Z = 0.05f };  // Knees at 0.5f down from Hips 1.0f
+        Ankle.LocalOffset = new JointTransform3D { X = 0.0f, Y = -0.35f, Z = -0.02f }; // Ankles at 0.15f above ground
+        Foot.LocalOffset = new JointTransform3D { X = 0.0f, Y = -0.15f, Z = 0.12f };  // Feet contact plane (0.00f)
+
+        Knee.ChildNode = Ankle;
+        Ankle.ChildNode = Foot;
+    }
+}
+
 public class AvatarStateController
 {
     public const float NormalizedUnitHeight = 2.0f; // Whole Body Unit Height Bounding Box
@@ -100,9 +121,13 @@ public class AvatarStateController
     public JointTransform3D HeadTransform { get; } = new() { X = 0.0f, Y = 1.85f, Z = 0.0f };
     public JointTransform3D TopOfHeadTransform { get; } = new() { X = 0.0f, Y = 2.0f, Z = 0.0f };
 
-    // Symmetrical Armature Sub-Sets (Left Shoulder = +1.85f, Right Shoulder = -1.85f)
+    // Upper Body Symmetrical Armature Sub-Sets (Left Shoulder = +1.85f, Right Shoulder = -1.85f)
     public ArmSubSet LeftArm { get; } = new(1.85f);
     public ArmSubSet RightArm { get; } = new(-1.85f);
+
+    // Lower Body Symmetrical Armature Sub-Sets (Left Hip = +0.35f, Right Hip = -0.35f)
+    public LegSubSet LeftLeg { get; } = new(0.35f);
+    public LegSubSet RightLeg { get; } = new(-0.35f);
 
     public JointTransform3D ComputePositionFromCenterOfMass(float deltaX, float deltaY, float deltaZ)
     {
