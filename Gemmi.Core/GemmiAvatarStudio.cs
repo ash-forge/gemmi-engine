@@ -34,29 +34,38 @@ public class GemmiAvatarStudio
         // 3. Crown Hair Zenith (Sphere at Y=1.70m, Joint 14)
         builder.AddSphere("CrownHair", (0.0f, matrix.Level2_CrownZenith.Y, 0.0f), radius: 0.08f, jointIdx: 14, color: spec.PrimaryColor);
 
-        // 4. Upper Chest Armor (Cylinder at Y=1.25m, Joint 8)
-        builder.AddCylinderCapsule("ChestArmor", (0.0f, 1.10f, 0.0f), height: 0.30f, radius: 0.18f, jointIdx: 8, color: spec.PrimaryColor);
+        // 4. Sculpted Hourglass Torso Armor (Tapers from hips 0.16m -> waist 0.12m -> chest 0.18m, Joint 8)
+        float[] torsoRadiusProfile = new float[] { 0.16f, 0.13f, 0.12f, 0.14f, 0.17f, 0.18f };
+        var sculptedTorso = GemmiSculptedMeshGenerator.GenerateContouredMesh("SculptedTorsoArmor", (0.0f, 0.85f, 0.0f), torsoRadiusProfile, height: 0.50f, radialSegments: 16, jointIdx: 8, color: spec.PrimaryColor);
+        builder.SubMeshes.Add(sculptedTorso);
 
         // 5. Core Power Gem (Sphere at Y=1.25m, Z=0.15m, Joint 8)
         builder.AddSphere("CorePowerGem", (0.0f, 1.25f, 0.15f), radius: 0.04f, jointIdx: 8, color: spec.CoreGemColor);
 
-        // 6. Pelvis Hips Mesh (Cylinder at Y=0.97m, Joint 5)
-        builder.AddCylinderCapsule("PelvisHips", (0.0f, 0.82f, 0.0f), height: 0.25f, radius: 0.16f, jointIdx: 5, color: spec.AccentColor);
-
-        // 7. Shoulder Armor Caps (Left Joint 9, Right Joint 10)
+        // 6. Shoulder Armor Caps (Left Joint 9, Right Joint 10)
         builder.AddSphere("LeftShoulderCap", (matrix.Level2_LeftShoulder.X, matrix.Level2_LeftShoulder.Y, 0.0f), radius: 0.07f, jointIdx: 9, color: spec.AccentColor);
         builder.AddSphere("RightShoulderCap", (matrix.Level2_RightShoulder.X, matrix.Level2_RightShoulder.Y, 0.0f), radius: 0.07f, jointIdx: 10, color: spec.AccentColor);
 
-        // 8. Upper Arms & Forearms (Left Joint 9, Right Joint 10)
-        builder.AddCylinderCapsule("LeftUpperArm", (0.22f, 1.05f, 0.0f), height: 0.28f, radius: 0.05f, jointIdx: 9, color: spec.PrimaryColor);
-        builder.AddCylinderCapsule("RightUpperArm", (-0.22f, 1.05f, 0.0f), height: 0.28f, radius: 0.05f, jointIdx: 10, color: spec.PrimaryColor);
+        // 7. Sculpted Contoured Upper Arms & Forearms (Left Joint 9, Right Joint 10)
+        float[] armRadiusProfile = new float[] { 0.04f, 0.055f, 0.05f, 0.04f };
+        var leftArm = GemmiSculptedMeshGenerator.GenerateContouredMesh("LeftSculptedArm", (0.22f, 1.05f, 0.0f), armRadiusProfile, height: 0.28f, radialSegments: 12, jointIdx: 9, color: spec.PrimaryColor);
+        var rightArm = GemmiSculptedMeshGenerator.GenerateContouredMesh("RightSculptedArm", (-0.22f, 1.05f, 0.0f), armRadiusProfile, height: 0.28f, radialSegments: 12, jointIdx: 10, color: spec.PrimaryColor);
+        builder.SubMeshes.Add(leftArm);
+        builder.SubMeshes.Add(rightArm);
 
-        // 9. Thigh & Leg Capsules (Left Joint 6, Right Joint 7)
-        builder.AddCylinderCapsule("LeftThigh", (matrix.Level1_LeftHip.X, 0.52f, 0.0f), height: 0.36f, radius: 0.08f, jointIdx: 6, color: spec.PrimaryColor);
-        builder.AddCylinderCapsule("RightThigh", (matrix.Level1_RightHip.X, 0.52f, 0.0f), height: 0.36f, radius: 0.08f, jointIdx: 7, color: spec.PrimaryColor);
+        // 8. Sculpted Contoured Thighs (Tapered thigh muscle curve, Joint 6 & 7)
+        float[] thighRadiusProfile = new float[] { 0.06f, 0.08f, 0.09f, 0.08f, 0.07f };
+        var leftThigh = GemmiSculptedMeshGenerator.GenerateContouredMesh("LeftSculptedThigh", (matrix.Level1_LeftHip.X, 0.52f, 0.0f), thighRadiusProfile, height: 0.36f, radialSegments: 14, jointIdx: 6, color: spec.PrimaryColor);
+        var rightThigh = GemmiSculptedMeshGenerator.GenerateContouredMesh("RightSculptedThigh", (matrix.Level1_RightHip.X, 0.52f, 0.0f), thighRadiusProfile, height: 0.36f, radialSegments: 14, jointIdx: 7, color: spec.PrimaryColor);
+        builder.SubMeshes.Add(leftThigh);
+        builder.SubMeshes.Add(rightThigh);
 
-        builder.AddCylinderCapsule("LeftShin", (matrix.Level1_LeftHip.X, 0.10f, 0.0f), height: 0.40f, radius: 0.07f, jointIdx: 1, color: spec.AccentColor);
-        builder.AddCylinderCapsule("RightShin", (matrix.Level1_RightHip.X, 0.10f, 0.0f), height: 0.40f, radius: 0.07f, jointIdx: 2, color: spec.AccentColor);
+        // 9. Sculpted Contoured Calves (Tapered calf muscle curve, Joint 1 & 2)
+        float[] calfRadiusProfile = new float[] { 0.04f, 0.05f, 0.075f, 0.06f, 0.05f };
+        var leftShin = GemmiSculptedMeshGenerator.GenerateContouredMesh("LeftSculptedShin", (matrix.Level1_LeftHip.X, 0.10f, 0.0f), calfRadiusProfile, height: 0.40f, radialSegments: 14, jointIdx: 1, color: spec.AccentColor);
+        var rightShin = GemmiSculptedMeshGenerator.GenerateContouredMesh("RightSculptedShin", (matrix.Level1_RightHip.X, 0.10f, 0.0f), calfRadiusProfile, height: 0.40f, radialSegments: 14, jointIdx: 2, color: spec.AccentColor);
+        builder.SubMeshes.Add(leftShin);
+        builder.SubMeshes.Add(rightShin);
 
         // 10. Feet Base Contacts (Left Joint 1, Right Joint 2)
         builder.AddCylinderCapsule("LeftFootBase", (matrix.Level0_LeftFoot.X, 0.0f, 0.05f), height: 0.10f, radius: 0.07f, jointIdx: 1, color: spec.AccentColor);
@@ -93,8 +102,8 @@ public class GemmiAvatarStudio
                 ["pbrMetallicRoughness"] = new JsonObject
                 {
                     ["baseColorFactor"] = new JsonArray { subMesh.BaseColor.R, subMesh.BaseColor.G, subMesh.BaseColor.B, subMesh.BaseColor.A },
-                    ["metallicFactor"] = 0.2,
-                    ["roughnessFactor"] = 0.4
+                    ["metallicFactor"] = 0.25,
+                    ["roughnessFactor"] = 0.35
                 }
             });
 
@@ -158,7 +167,7 @@ public class GemmiAvatarStudio
             jsonBufferViewsArray.Add(new JsonObject { ["buffer"] = 0, ["byteOffset"] = uvOffset, ["byteLength"] = uvLength, ["target"] = 34962 });
             jsonBufferViewsArray.Add(new JsonObject { ["buffer"] = 0, ["byteOffset"] = idxOffset, ["byteLength"] = idxLength, ["target"] = 34963 }); // ELEMENT_ARRAY_BUFFER
 
-            // Register Accessors with REQUIRED POSITION Min/Max Bounds
+            // Register Accessors
             int accPos = jsonAccessorsArray.Count;
             jsonAccessorsArray.Add(new JsonObject
             {
@@ -208,7 +217,7 @@ public class GemmiAvatarStudio
         {
             ["asset"] = new JsonObject
             {
-                ["generator"] = "Gemmi-Sovereign-3D-Avatar-Studio-v2.5",
+                ["generator"] = "Gemmi-Sovereign-3D-Avatar-Studio-v3.0",
                 ["version"] = "2.0"
             },
             ["scene"] = 0,
