@@ -15,6 +15,7 @@ public class GemmiAvatarStudio
         public (float R, float G, float B, float A) PrimaryColor { get; set; }
         public (float R, float G, float B, float A) AccentColor { get; set; }
         public (float R, float G, float B, float A) HairColor { get; set; }
+        public (float R, float G, float B, float A) CoreGemColor { get; set; }
 
         public override string ToString() => $"[AVATAR CREATION SPEC] Companion: {CompanionName} | Height: {HeightMeters:F2}m";
     }
@@ -23,27 +24,41 @@ public class GemmiAvatarStudio
     {
         var builder = new GemmiMeshBuilder();
 
-        // 1. Build Head & Visor Mesh (Sphere at Y=1.55m, Joint 12)
+        // 1. Head & Face Visor (Sphere at Y=1.55m, Joint 12)
         builder.AddSphere("HeadVisor", (0.0f, matrix.Level2_HeadCenter.Y, 0.0f), radius: 0.12f, jointIdx: 12, color: spec.HairColor);
 
-        // 2. Build Crown Hair Zenith Mesh (Sphere at Y=1.70m, Joint 14)
+        // 2. Dual Glowing Eye Visors (Spheres at Y=1.57m, Z=0.10m, Joint 12)
+        builder.AddSphere("LeftEyeVisor", (0.04f, 1.57f, 0.10f), radius: 0.025f, jointIdx: 12, color: spec.PrimaryColor);
+        builder.AddSphere("RightEyeVisor", (-0.04f, 1.57f, 0.10f), radius: 0.025f, jointIdx: 12, color: spec.PrimaryColor);
+
+        // 3. Crown Hair Zenith (Sphere at Y=1.70m, Joint 14)
         builder.AddSphere("CrownHair", (0.0f, matrix.Level2_CrownZenith.Y, 0.0f), radius: 0.08f, jointIdx: 14, color: spec.PrimaryColor);
 
-        // 3. Build Upper Chest Armor (Cylinder at Y=1.25m, Joint 8)
+        // 4. Upper Chest Armor (Cylinder at Y=1.25m, Joint 8)
         builder.AddCylinderCapsule("ChestArmor", (0.0f, 1.10f, 0.0f), height: 0.30f, radius: 0.18f, jointIdx: 8, color: spec.PrimaryColor);
 
-        // 4. Build Pelvis Hips Mesh (Cylinder at Y=0.97m, Joint 5)
+        // 5. Core Power Gem (Sphere at Y=1.25m, Z=0.15m, Joint 8)
+        builder.AddSphere("CorePowerGem", (0.0f, 1.25f, 0.15f), radius: 0.04f, jointIdx: 8, color: spec.CoreGemColor);
+
+        // 6. Pelvis Hips Mesh (Cylinder at Y=0.97m, Joint 5)
         builder.AddCylinderCapsule("PelvisHips", (0.0f, 0.82f, 0.0f), height: 0.25f, radius: 0.16f, jointIdx: 5, color: spec.AccentColor);
 
-        // 5. Build Shoulder Armor Caps (Left Joint 9, Right Joint 10)
+        // 7. Shoulder Armor Caps (Left Joint 9, Right Joint 10)
         builder.AddSphere("LeftShoulderCap", (matrix.Level2_LeftShoulder.X, matrix.Level2_LeftShoulder.Y, 0.0f), radius: 0.07f, jointIdx: 9, color: spec.AccentColor);
         builder.AddSphere("RightShoulderCap", (matrix.Level2_RightShoulder.X, matrix.Level2_RightShoulder.Y, 0.0f), radius: 0.07f, jointIdx: 10, color: spec.AccentColor);
 
-        // 6. Build Thigh & Leg Capsules (Left Joint 6, Right Joint 7)
+        // 8. Upper Arms & Forearms (Left Joint 9, Right Joint 10)
+        builder.AddCylinderCapsule("LeftUpperArm", (0.22f, 1.05f, 0.0f), height: 0.28f, radius: 0.05f, jointIdx: 9, color: spec.PrimaryColor);
+        builder.AddCylinderCapsule("RightUpperArm", (-0.22f, 1.05f, 0.0f), height: 0.28f, radius: 0.05f, jointIdx: 10, color: spec.PrimaryColor);
+
+        // 9. Thigh & Leg Capsules (Left Joint 6, Right Joint 7)
         builder.AddCylinderCapsule("LeftThigh", (matrix.Level1_LeftHip.X, 0.52f, 0.0f), height: 0.36f, radius: 0.08f, jointIdx: 6, color: spec.PrimaryColor);
         builder.AddCylinderCapsule("RightThigh", (matrix.Level1_RightHip.X, 0.52f, 0.0f), height: 0.36f, radius: 0.08f, jointIdx: 7, color: spec.PrimaryColor);
 
-        // 7. Build Feet Base Contacts (Left Joint 1, Right Joint 2)
+        builder.AddCylinderCapsule("LeftShin", (matrix.Level1_LeftHip.X, 0.10f, 0.0f), height: 0.40f, radius: 0.07f, jointIdx: 1, color: spec.AccentColor);
+        builder.AddCylinderCapsule("RightShin", (matrix.Level1_RightHip.X, 0.10f, 0.0f), height: 0.40f, radius: 0.07f, jointIdx: 2, color: spec.AccentColor);
+
+        // 10. Feet Base Contacts (Left Joint 1, Right Joint 2)
         builder.AddCylinderCapsule("LeftFootBase", (matrix.Level0_LeftFoot.X, 0.0f, 0.05f), height: 0.10f, radius: 0.07f, jointIdx: 1, color: spec.AccentColor);
         builder.AddCylinderCapsule("RightFootBase", (matrix.Level0_RightFoot.X, 0.0f, 0.05f), height: 0.10f, radius: 0.07f, jointIdx: 2, color: spec.AccentColor);
 
@@ -73,6 +88,7 @@ public class GemmiAvatarStudio
         var jsonMeshesArray = new JsonArray();
         var jsonAccessorsArray = new JsonArray();
         var jsonBufferViewsArray = new JsonArray();
+        var jsonMaterialsArray = new JsonArray();
 
         int currentBufferOffset = 0;
 
@@ -80,6 +96,18 @@ public class GemmiAvatarStudio
         {
             int vertCount = subMesh.Vertices.Count;
             int idxCount = subMesh.Indices.Count;
+            int matIdx = jsonMaterialsArray.Count;
+
+            jsonMaterialsArray.Add(new JsonObject
+            {
+                ["name"] = $"{subMesh.Name}_Material",
+                ["pbrMetallicRoughness"] = new JsonObject
+                {
+                    ["baseColorFactor"] = new JsonArray { subMesh.BaseColor.R, subMesh.BaseColor.G, subMesh.BaseColor.B, subMesh.BaseColor.A },
+                    ["metallicFactor"] = 0.3,
+                    ["roughnessFactor"] = 0.3
+                }
+            });
 
             // 1. Write POSITION Buffer
             int posOffset = currentBufferOffset;
@@ -152,7 +180,8 @@ public class GemmiAvatarStudio
                             ["NORMAL"] = accPos + 1,
                             ["TEXCOORD_0"] = accPos + 2
                         },
-                        ["indices"] = accPos + 3
+                        ["indices"] = accPos + 3,
+                        ["material"] = matIdx
                     }
                 }
             });
@@ -165,13 +194,14 @@ public class GemmiAvatarStudio
         {
             ["asset"] = new JsonObject
             {
-                ["generator"] = "Gemmi-Sovereign-3D-Avatar-Studio-v1.0",
+                ["generator"] = "Gemmi-Sovereign-3D-Avatar-Studio-v2.0",
                 ["version"] = "2.0"
             },
             ["scene"] = 0,
             ["scenes"] = new JsonArray { new JsonObject { ["name"] = "GemmiSovereignScene", ["nodes"] = new JsonArray { 0 } } },
             ["nodes"] = jsonNodesArray,
             ["meshes"] = jsonMeshesArray,
+            ["materials"] = jsonMaterialsArray,
             ["accessors"] = jsonAccessorsArray,
             ["bufferViews"] = jsonBufferViewsArray,
             ["buffers"] = new JsonArray { new JsonObject { ["byteLength"] = binData.Length } }

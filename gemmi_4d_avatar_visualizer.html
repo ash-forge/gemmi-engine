@@ -481,9 +481,9 @@
             jointSpheres.push(sphere);
         }
 
-        // Load Haven 3D Avatar GLB Model (Khronos Sanitized GLTF 2.0)
+        // Load Sovereign Gemmi 3D Avatar GLB Model (Native Gemmi Avatar Studio)
         const loader = new THREE.GLTFLoader();
-        const glbUrl = 'http://localhost:8085/uploads/avatar_sanitized.glb';
+        const glbUrl = 'http://localhost:8085/uploads/gemmi_avatar_v3.glb';
 
         loader.load(glbUrl, (gltf) => {
             avatarModel = gltf.scene;
