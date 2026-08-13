@@ -464,6 +464,7 @@
         loader.load(glbUrl, (gltf) => {
             avatarModel = gltf.scene;
             avatarModel.scale.set(1.0, 1.0, 1.0);
+            avatarModel.rotation.y = Math.PI; // 180° Y-Rotation so avatar faces forward toward camera!
             scene.add(avatarModel);
 
             statusEl.innerText = "✓ Haven 3D Avatar GLB Loaded & Joint Rigged";
