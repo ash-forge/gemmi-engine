@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemmi Engine - 4D Spatiotemporal Avatar Visualizer</title>
+    <title>Gemmi Engine - 4D Spatiotemporal Avatar Visualizer (Three.js 3D GLB)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
@@ -44,7 +44,7 @@
             flex: 1;
             height: 100%;
             position: relative;
-            background: radial-gradient(circle at 50% 40%, #151c33 0%, #080a10 100%);
+            background: radial-gradient(circle at 50% 40%, #1a233d 0%, #080a10 100%);
         }
 
         #view3d {
@@ -233,16 +233,36 @@
             width: 100%;
             height: 100%;
         }
+
+        #status-indicator {
+            position: absolute;
+            top: 70px;
+            left: 24px;
+            background: rgba(0, 245, 212, 0.15);
+            border: 1px solid var(--accent-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-green);
+        }
     </style>
+
+    <!-- Include Three.js & GLTFLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
     <!-- 3D Canvas Viewport -->
     <div id="canvas-container">
         <div class="hud-header">
-            <h1>🧠 GEMMI 4D AVATAR <span class="badge-4d">15-Point Matrix</span></h1>
-            <p>Sovereign C# Kinematic Topology Engine (FP 0.0 | FP 1.0 | FP 2.0)</p>
+            <h1>🧠 GEMMI 4D AVATAR <span class="badge-4d">15-Point GLB Model</span></h1>
+            <p>Haven UniGLTF 3D Avatar Mesh (avatar_456071c0b8ea484a89dfaeddf11c5138.glb)</p>
         </div>
+
+        <div id="status-indicator">⌛ Loading Haven 3D Avatar GLB Model...</div>
 
         <canvas id="view3d"></canvas>
 
@@ -267,7 +287,7 @@
                 <button class="btn" id="btn-walk" onclick="setAvatarState('walk')">🚶‍♂️ Walk to Radar</button>
             </div>
             <div style="margin-top: 10px;">
-                <button class="btn" id="btn-mesh" onclick="toggleMeshBody()" style="width: 100%;">👗 Render 3D Skinned Mesh Body</button>
+                <button class="btn active" id="btn-skeleton" onclick="toggleSkeletonWireframe()" style="width: 100%;">💎 Toggle 15-Point Matrix Overlay</button>
             </div>
         </div>
 
@@ -343,35 +363,128 @@
 
     </div>
 
-    <!-- WebGL Kinematic Renderer Script -->
+    <!-- Three.js 3D Renderer Script -->
     <script>
-        const canvas = document.getElementById('view3d');
-        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+        const viewCanvas = document.getElementById('view3d');
         const radarCanvas = document.getElementById('radar-canvas');
         const radarCtx = radarCanvas.getContext('2d');
+        const statusEl = document.getElementById('status-indicator');
 
-        // State & Kinematic Variables
-        let currentState = 'cozy'; // 'cozy', 'lean', 'stand'
+        // Three.js Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0c14);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 1.2, 3.2);
+
+        const renderer = new THREE.WebGLRenderer({ canvas: viewCanvas, antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 1.0, 0);
+        controls.update();
+
+        // Lighting Setup
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0x00f2fe, 1.2);
+        mainLight.position.set(2, 4, 3);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+
+        const rimLight = new THREE.DirectionalLight(0xf355da, 1.0);
+        rimLight.position.set(-2, 2, -2);
+        scene.add(rimLight);
+
+        // Ground Plane Grid
+        const gridHelper = new THREE.GridHelper(10, 20, 0x00f2fe, 0x1a233d);
+        gridHelper.position.y = 0;
+        scene.add(gridHelper);
+
+        // Kinematic Variables
+        let currentState = 'cozy';
         let targetHeight = 1.75;
-        let rotationAngle = 0.01;
-        let showMeshBody = true; // Default 3D Skinned Body Mesh Enabled
+        let showSkeletonOverlay = true;
+        let avatarModel = null;
+        let bones = {};
 
-        function toggleMeshBody() {
-            showMeshBody = !showMeshBody;
-            const btn = document.getElementById('btn-mesh');
-            if (showMeshBody) {
-                btn.innerText = "👗 Hide 3D Skinned Mesh Body";
-                btn.classList.add('active');
-            } else {
-                btn.innerText = "👗 Render 3D Skinned Mesh Body";
-                btn.classList.remove('active');
+        // 15-Point Wireframe Visualizer Group
+        const skeletonGroup = new THREE.Group();
+        scene.add(skeletonGroup);
+
+        const jointSpheres = [];
+        const jointMaterial = new THREE.MeshBasicMaterial({ color: 0x00f2fe, wireframe: true });
+        const crownMaterial = new THREE.MeshBasicMaterial({ color: 0xf355da });
+
+        for (let i = 0; i < 15; i++) {
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), i === 14 ? crownMaterial : jointMaterial);
+            skeletonGroup.add(sphere);
+            jointSpheres.push(sphere);
+        }
+
+        // Load Haven 3D Avatar GLB Model
+        const loader = new THREE.GLTFLoader();
+        const glbUrl = 'http://localhost:8085/uploads/avatar_456071c0b8ea484a89dfaeddf11c5138.glb';
+
+        loader.load(glbUrl, (gltf) => {
+            avatarModel = gltf.scene;
+            avatarModel.scale.set(1.0, 1.0, 1.0);
+            scene.add(avatarModel);
+
+            statusEl.innerText = "✓ Haven 3D Avatar GLB Loaded (VRoid UniGLTF)";
+            statusEl.style.borderColor = "#00f5d4";
+            statusEl.style.color = "#00f5d4";
+
+            // Traverse skeleton bones
+            avatarModel.traverse((child) => {
+                if (child.isBone) {
+                    bones[child.name] = child;
+                }
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            console.log("GLB Skeleton Bones Found:", Object.keys(bones));
+        }, (xhr) => {
+            let pct = (xhr.loaded / (xhr.total || 7878712) * 100).toFixed(0);
+            statusEl.innerText = `⌛ Loading Haven 3D Avatar GLB: ${pct}%`;
+        }, (err) => {
+            console.error("GLB Load Error:", err);
+            statusEl.innerText = "⚠️ GLB HTTP Server Offline. Showing 15-Point Skinned Mesh";
+            statusEl.style.borderColor = "#ffb703";
+            statusEl.style.color = "#ffb703";
+        });
+
+        function setAvatarState(state) {
+            currentState = state;
+            document.querySelectorAll('#btn-cozy, #btn-lean, #btn-stand').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${state}`).classList.add('active');
+        }
+
+        function toggleSkeletonWireframe() {
+            showSkeletonOverlay = !showSkeletonOverlay;
+            skeletonGroup.visible = showSkeletonOverlay;
+        }
+
+        function setTargetHeight(h) {
+            targetHeight = h;
+            document.getElementById('height-slider').value = h;
+            document.getElementById('height-val').innerText = `${h.toFixed(2)} m`;
+            if (avatarModel) {
+                let s = h / 1.75;
+                avatarModel.scale.set(s, s, s);
             }
         }
 
-        // Kinematic Offsets
-        let spineX = 0.0, spineY = 1.0, spineZ = 0.0;
-        let headX = 0.0, headY = 1.85, headZ = 0.0;
-        let armZ = 0.20;
+        function onHeightSlider(val) {
+            setTargetHeight(parseFloat(val));
+        }
 
         // Radar Objects
         const radarObjects = [
@@ -381,289 +494,106 @@
             { name: "NAS Server", x: -2.10, z: -1.20, color: "#f355da" }
         ];
 
-        function resizeCanvas() {
-            canvas.width = canvas.clientWidth;
-            canvas.height = canvas.clientHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        let spineX = 0.0, spineY = 1.0, spineZ = 0.0;
 
-        function setAvatarState(state) {
-            currentState = state;
-            document.querySelectorAll('#btn-cozy, #btn-lean, #btn-stand').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${state}`).classList.add('active');
-        }
+        function animate() {
+            requestAnimationFrame(animate);
 
-        function setTargetHeight(h) {
-            targetHeight = h;
-            document.getElementById('height-slider').value = h;
-            document.getElementById('height-val').innerText = `${h.toFixed(2)} m`;
-        }
+            // Animate Kinematics
+            const time = Date.now() * 0.003;
 
-        function onHeightSlider(val) {
-            targetHeight = parseFloat(val);
-            document.getElementById('height-val').innerText = `${targetHeight.toFixed(2)} m`;
-        }
-
-        // 3D Matrix Projection Engine
-        function project3D(x, y, z, width, height, rot) {
-            // Apply scale invariance
-            const scale = targetHeight / 2.0;
-            let sx = x * scale;
-            let sy = y * scale;
-            let sz = z * scale;
-
-            // Apply Y-axis rotation
-            const cos = Math.cos(rot);
-            const sin = Math.sin(rot);
-            const rx = sx * cos - sz * sin;
-            const rz = sx * sin + sz * cos + 3.5;
-
-            // Perspective Projection
-            const fov = 400;
-            const px = (rx * fov) / rz + width / 2;
-            const py = (-sy * fov) / rz + height / 2 + 100;
-
-            return { x: px, y: py, rz: rz };
-        }
-
-        function drawSkeleton() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Interpolate Kinematics based on state
             if (currentState === 'cozy') {
                 spineX += (0.0 - spineX) * 0.1;
                 spineY += (1.0 - spineY) * 0.1;
                 spineZ += (0.0 - spineZ) * 0.1;
-                headX += (0.0 - headX) * 0.1;
-                headZ += (0.0 - headZ) * 0.1;
-                armZ += (0.20 - armZ) * 0.1;
                 document.getElementById('tel-stance').innerText = "Cozy Seated (Sipping Coffee 🎧)";
                 document.getElementById('tel-lean-delta').innerText = "ΔZ=0.00m, ΔX=0.00m";
             } else if (currentState === 'lean') {
                 spineX += (0.23 - spineX) * 0.1;
                 spineY += (0.95 - spineY) * 0.1;
                 spineZ += (-0.05 - spineZ) * 0.1;
-                headX += (0.23 - headX) * 0.1;
-                headZ += (-0.08 - headZ) * 0.1;
-                armZ += (0.40 - armZ) * 0.1;
                 document.getElementById('tel-stance').innerText = "Proactive Help (Leaning Forward 🔍)";
                 document.getElementById('tel-lean-delta').innerText = "ΔZ=-0.05m, ΔX=+0.23m";
             } else if (currentState === 'stand') {
                 spineX += (0.0 - spineX) * 0.1;
-                spineY += (1.35 - spineY) * 0.1;
+                spineY += (1.0 - spineY) * 0.1;
                 spineZ += (0.0 - spineZ) * 0.1;
-                headX += (0.0 - headX) * 0.1;
-                headZ += (0.0 - headZ) * 0.1;
-                armZ += (0.0 - armZ) * 0.1;
                 document.getElementById('tel-stance').innerText = "Standing Erect (Neutral Balance 🧘)";
                 document.getElementById('tel-lean-delta').innerText = "ΔZ=0.00m, ΔX=0.00m";
             } else if (currentState === 'walk') {
-                // Gait Walk Trajectory to Oscilloscope Workbench (1.50m, 0.40m)
-                const walkTime = Date.now() / 300;
-                spineX += (1.50 * Math.sin(walkTime * 0.5) - spineX) * 0.05;
-                spineZ += (0.40 * Math.cos(walkTime * 0.5) - spineZ) * 0.05;
-                spineY = 1.35 + Math.abs(Math.sin(walkTime * 2)) * 0.06;
-                headX = spineX;
-                headZ = spineZ;
-                armZ = Math.sin(walkTime * 2) * 0.25;
+                spineX = 1.2 * Math.sin(time * 0.5);
+                spineZ = 0.4 * Math.cos(time * 0.5);
+                spineY = 1.0 + Math.abs(Math.sin(time * 2)) * 0.05;
                 document.getElementById('tel-stance').innerText = "4D Walking Gait Locomotion 🚶‍♂️";
                 document.getElementById('tel-lean-delta').innerText = `ΔZ=${spineZ.toFixed(2)}m, ΔX=${spineX.toFixed(2)}m`;
             }
 
-            rotationAngle += 0.005;
-
-            // 15-Point Spatial Matrix Coordinates
-            const nodes = {
-                p1_ground: { x: 0.0, y: 0.0, z: 0.0 },
-                p2_lankle: { x: 0.35, y: 0.15, z: -0.02 },
-                p3_rankle: { x: -0.35, y: 0.15, z: -0.02 },
-                p4_lknee: { x: 0.35, y: 0.50, z: 0.05 },
-                p5_rknee: { x: -0.35, y: 0.50, z: 0.05 },
-                p6_hips: { x: 0.0, y: 1.0, z: 0.0 },
-                p7_spine: { x: spineX, y: spineY + 0.35, z: spineZ },
-                p8_lshoulder: { x: 0.55 + spineX, y: spineY + 0.45, z: spineZ },
-                p9_rshoulder: { x: -0.55 + spineX, y: spineY + 0.45, z: spineZ },
-                p10_neck: { x: headX, y: 1.65, z: headZ },
-                p11_head: { x: headX, y: 1.85, z: headZ },
-                p12_crown: { x: headX, y: 2.00, z: headZ },
-                // Arm Chain Nodes
-                l_elbow: { x: 0.60 + spineX, y: spineY + 0.10, z: armZ },
-                r_elbow: { x: -0.60 + spineX, y: spineY + 0.10, z: armZ },
-                l_hand: { x: 0.40 + spineX, y: spineY, z: armZ + 0.2 },
-                r_hand: { x: -0.40 + spineX, y: spineY, z: armZ + 0.2 }
-            };
-
-            // Project Nodes to 2D Screen
-            const p = {};
-            for (let k in nodes) {
-                p[k] = project3D(nodes[k].x, nodes[k].y, nodes[k].z, canvas.width, canvas.height, rotationAngle);
-            }
-
-            // Draw Ground Contact Grid
-            ctx.strokeStyle = 'rgba(0, 242, 254, 0.15)';
-            ctx.lineWidth = 1;
-            for (let i = -3; i <= 3; i++) {
-                let g1 = project3D(i, 0, -3, canvas.width, canvas.height, rotationAngle);
-                let g2 = project3D(i, 0, 3, canvas.width, canvas.height, rotationAngle);
-                ctx.beginPath(); ctx.moveTo(g1.x, g1.y); ctx.lineTo(g2.x, g2.y); ctx.stroke();
-
-                let g3 = project3D(-3, 0, i, canvas.width, canvas.height, rotationAngle);
-                let g4 = project3D(3, 0, i, canvas.width, canvas.height, rotationAngle);
-                ctx.beginPath(); ctx.moveTo(g3.x, g3.y); ctx.lineTo(g4.x, g4.y); ctx.stroke();
-            }
-
-            // Draw 3D Volumetric Skinned Body Mesh (Haven Companion Body Model)
-            if (showMeshBody) {
-                ctx.fillStyle = 'rgba(243, 85, 218, 0.45)'; // Glowing Head Visor (Magenta)
-                ctx.strokeStyle = '#f355da';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(p['p11_head'].x, p['p11_head'].y - 5, 22, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                // Upper Chest Torso Mesh Armor
-                ctx.fillStyle = 'rgba(0, 242, 254, 0.35)'; // Cyan Armor
-                ctx.strokeStyle = '#00f2fe';
-                ctx.beginPath();
-                ctx.moveTo(p['p8_lshoulder'].x + 10, p['p8_lshoulder'].y);
-                ctx.lineTo(p['p9_rshoulder'].x - 10, p['p9_rshoulder'].y);
-                ctx.lineTo(p['p6_hips'].x - 15, p['p6_hips'].y);
-                ctx.lineTo(p['p6_hips'].x + 15, p['p6_hips'].y);
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-
-                // Pelvis Hips Mesh
-                ctx.fillStyle = 'rgba(112, 0, 255, 0.40)'; // Deep Purple
-                ctx.strokeStyle = '#7000ff';
-                ctx.beginPath();
-                ctx.arc(p['p6_hips'].x, p['p6_hips'].y, 18, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-
-                // Left & Right Thigh Limb Volumes
-                function drawLimbCapsule(pStart, pEnd, radius = 12, color = 'rgba(0, 245, 212, 0.30)') {
-                    ctx.strokeStyle = '#00f5d4';
-                    ctx.lineWidth = radius;
-                    ctx.lineCap = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(pStart.x, pStart.y);
-                    ctx.lineTo(pEnd.x, pEnd.y);
-                    ctx.stroke();
+            // Move 3D Avatar Model Position
+            if (avatarModel) {
+                avatarModel.position.set(spineX, spineY - 1.0, spineZ);
+                if (bones['Hips']) {
+                    bones['Hips'].position.y = 0.97 + Math.sin(time) * 0.02;
                 }
-
-                drawLimbCapsule(p['p6_hips'], p['p4_lknee'], 16);
-                drawLimbCapsule(p['p6_hips'], p['p5_rknee'], 16);
-                drawLimbCapsule(p['p4_lknee'], p['p2_lankle'], 12);
-                drawLimbCapsule(p['p5_rknee'], p['p3_rankle'], 12);
-                drawLimbCapsule(p['p8_lshoulder'], p['l_elbow'], 12);
-                drawLimbCapsule(p['p9_rshoulder'], p['r_elbow'], 12);
-                drawLimbCapsule(p['l_elbow'], p['l_hand'], 10);
-                drawLimbCapsule(p['r_elbow'], p['r_hand'], 10);
             }
 
-            // Draw Limb Armature Connections Wireframe
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#00f2fe';
+            // Update 15-Point Wireframe Spheres Position
+            const p = [
+                [0, 0, 0], [0.35, 0.15, -0.02], [-0.35, 0.15, -0.02],
+                [0.35, 0.50, 0.05], [-0.35, 0.50, 0.05], [spineX, spineY, spineZ],
+                [spineX + 0.35, spineY, spineZ], [spineX - 0.35, spineY, spineZ],
+                [spineX, spineY + 0.35, spineZ], [spineX + 0.55, spineY + 0.45, spineZ],
+                [spineX - 0.55, spineY + 0.45, spineZ], [spineX, spineY + 0.65, spineZ],
+                [spineX, spineY + 0.85, spineZ], [spineX, spineY + 1.00, spineZ], [spineX, spineY + 1.15, spineZ]
+            ];
 
-            function connect(n1, n2, color = '#00f2fe') {
-                ctx.strokeStyle = color;
-                ctx.beginPath();
-                ctx.moveTo(p[n1].x, p[n1].y);
-                ctx.lineTo(p[n2].x, p[n2].y);
-                ctx.stroke();
+            for (let i = 0; i < 15; i++) {
+                jointSpheres[i].position.set(p[i][0], p[i][1], p[i][2]);
             }
 
-            // Spine & Central Axis
-            connect('p1_ground', 'p6_hips', 'rgba(255,255,255,0.3)');
-            connect('p6_hips', 'p7_spine', '#00f5d4');
-            connect('p7_spine', 'p10_neck', '#00f5d4');
-            connect('p10_neck', 'p11_head', '#7000ff');
-            connect('p11_head', 'p12_crown', '#f355da');
-
-            // Shoulders & Arms
-            connect('p7_spine', 'p8_lshoulder', '#4facfe');
-            connect('p7_spine', 'p9_rshoulder', '#4facfe');
-            connect('p8_lshoulder', 'l_elbow', '#00f2fe');
-            connect('p9_rshoulder', 'r_elbow', '#00f2fe');
-            connect('l_elbow', 'l_hand', '#f355da');
-            connect('r_elbow', 'r_hand', '#f355da');
-
-            // Hips & Legs
-            connect('p6_hips', 'p4_lknee', '#7000ff');
-            connect('p6_hips', 'p5_rknee', '#7000ff');
-            connect('p4_lknee', 'p2_lankle', '#00f2fe');
-            connect('p5_rknee', 'p3_rankle', '#00f2fe');
-
-            // Draw Joint Nodes (Glow Dots)
-            for (let k in p) {
-                ctx.fillStyle = (k === 'p12_crown' || k === 'p11_head') ? '#f355da' : '#00f2fe';
-                ctx.beginPath();
-                ctx.arc(p[k].x, p[k].y, 5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Telemetry Output Updates
+            // Telemetry Updates
             const now = new Date();
             document.getElementById('tel-time').innerText = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
-            document.getElementById('tel-crown').innerText = `(${nodes.p12_crown.x.toFixed(2)}, ${nodes.p12_crown.y.toFixed(2)}, ${nodes.p12_crown.z.toFixed(2)})`;
-            document.getElementById('tel-head').innerText = `(${nodes.p11_head.x.toFixed(2)}, ${nodes.p11_head.y.toFixed(2)}, ${nodes.p11_head.z.toFixed(2)})`;
-            document.getElementById('tel-hips').innerText = `(${nodes.p6_hips.x.toFixed(2)}, ${nodes.p6_hips.y.toFixed(2)}, ${nodes.p6_hips.z.toFixed(2)})`;
+            document.getElementById('tel-crown').innerText = `(${spineX.toFixed(2)}, ${(spineY + 1.0).toFixed(2)}, ${spineZ.toFixed(2)})`;
+            document.getElementById('tel-head').innerText = `(${spineX.toFixed(2)}, ${(spineY + 0.85).toFixed(2)}, ${spineZ.toFixed(2)})`;
+            document.getElementById('tel-hips').innerText = `(${spineX.toFixed(2)}, ${spineY.toFixed(2)}, ${spineZ.toFixed(2)})`;
 
             drawRadar();
-            requestAnimationFrame(drawSkeleton);
+            renderer.render(scene, camera);
         }
 
-        // 360-Degree Radar Renderer
+        // Radar Renderer
         function drawRadar() {
-            const w = radarCanvas.width;
-            const h = radarCanvas.height;
-            const cx = w / 2;
-            const cy = h / 2;
-            const radius = w / 2 - 10;
-
+            const w = radarCanvas.width, h = radarCanvas.height;
+            const cx = w / 2, cy = h / 2, radius = w / 2 - 10;
             radarCtx.clearRect(0, 0, w, h);
 
-            // Radar Concentric Circles
             radarCtx.strokeStyle = 'rgba(0, 245, 212, 0.25)';
             radarCtx.lineWidth = 1;
             radarCtx.beginPath(); radarCtx.arc(cx, cy, radius, 0, Math.PI * 2); radarCtx.stroke();
             radarCtx.beginPath(); radarCtx.arc(cx, cy, radius * 0.6, 0, Math.PI * 2); radarCtx.stroke();
-            radarCtx.beginPath(); radarCtx.arc(cx, cy, radius * 0.3, 0, Math.PI * 2); radarCtx.stroke();
 
-            // Radar Axis Lines
-            radarCtx.beginPath(); radarCtx.moveTo(cx - radius, cy); radarCtx.lineTo(cx + radius, cy); radarCtx.stroke();
-            radarCtx.beginPath(); radarCtx.moveTo(cx, cy - radius); radarCtx.lineTo(cx, cy + radius); radarCtx.stroke();
-
-            // Sweep Line
-            const sweepAngle = (Date.now() / 1000) % (Math.PI * 2);
             radarCtx.strokeStyle = 'rgba(0, 245, 212, 0.6)';
             radarCtx.beginPath();
             radarCtx.moveTo(cx, cy);
-            radarCtx.lineTo(cx + Math.cos(sweepAngle) * radius, cy + Math.sin(sweepAngle) * radius);
+            radarCtx.lineTo(cx + Math.cos(Date.now() / 500) * radius, cy + Math.sin(Date.now() / 500) * radius);
             radarCtx.stroke();
 
-            // Avatar Center Blip
             radarCtx.fillStyle = '#f355da';
-            radarCtx.beginPath();
-            radarCtx.arc(cx, cy, 4, 0, Math.PI * 2);
-            radarCtx.fill();
+            radarCtx.beginPath(); radarCtx.arc(cx + (spineX / 3.0) * radius, cy + (spineZ / 3.0) * radius, 4, 0, Math.PI * 2); radarCtx.fill();
 
-            // Plot Objects
             radarObjects.forEach(obj => {
-                const ox = cx + (obj.x / 3.0) * radius;
-                const oz = cy + (obj.z / 3.0) * radius;
-
                 radarCtx.fillStyle = obj.color;
-                radarCtx.beginPath();
-                radarCtx.arc(ox, oz, 4, 0, Math.PI * 2);
-                radarCtx.fill();
+                radarCtx.beginPath(); radarCtx.arc(cx + (obj.x / 3.0) * radius, cy + (obj.z / 3.0) * radius, 4, 0, Math.PI * 2); radarCtx.fill();
             });
         }
 
-        drawSkeleton();
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        animate();
     </script>
 </body>
 </html>
