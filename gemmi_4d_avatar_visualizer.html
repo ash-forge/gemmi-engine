@@ -295,7 +295,7 @@
             
             <div class="control-row">
                 <div class="control-label">
-                    <span>Right Arm Wave Pitch:</span>
+                    <span>Right Arm Pitch:</span>
                     <span id="r-arm-val" class="telemetry-val">0°</span>
                 </div>
                 <input type="range" class="slider" id="r-arm-slider" min="-120" max="120" value="0" oninput="onJointSlider('rArm', this.value)">
@@ -303,10 +303,26 @@
 
             <div class="control-row">
                 <div class="control-label">
-                    <span>Left Arm Reach Pitch:</span>
+                    <span>Right Elbow Flexion:</span>
+                    <span id="r-elbow-val" class="telemetry-val">0°</span>
+                </div>
+                <input type="range" class="slider" id="r-elbow-slider" min="0" max="135" value="0" oninput="onJointSlider('rElbow', this.value)">
+            </div>
+
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Left Arm Pitch:</span>
                     <span id="l-arm-val" class="telemetry-val">0°</span>
                 </div>
                 <input type="range" class="slider" id="l-arm-slider" min="-120" max="120" value="0" oninput="onJointSlider('lArm', this.value)">
+            </div>
+
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Left Elbow Flexion:</span>
+                    <span id="l-elbow-val" class="telemetry-val">0°</span>
+                </div>
+                <input type="range" class="slider" id="l-elbow-slider" min="0" max="135" value="0" oninput="onJointSlider('lElbow', this.value)">
             </div>
 
             <div class="control-row">
@@ -323,6 +339,14 @@
                     <span id="spine-val" class="telemetry-val">0°</span>
                 </div>
                 <input type="range" class="slider" id="spine-slider" min="-45" max="45" value="0" oninput="onJointSlider('spine', this.value)">
+            </div>
+
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Knee Flexion (Squat / Bend):</span>
+                    <span id="knees-val" class="telemetry-val">0°</span>
+                </div>
+                <input type="range" class="slider" id="knees-slider" min="0" max="120" value="0" oninput="onJointSlider('knees', this.value)">
             </div>
 
             <div class="control-row">
@@ -529,9 +553,12 @@
         function onJointSlider(joint, val) {
             jointRotations[joint] = parseFloat(val);
             if (joint === 'rArm') document.getElementById('r-arm-val').innerText = `${val}°`;
+            if (joint === 'rElbow') document.getElementById('r-elbow-val').innerText = `${val}°`;
             if (joint === 'lArm') document.getElementById('l-arm-val').innerText = `${val}°`;
+            if (joint === 'lElbow') document.getElementById('l-elbow-val').innerText = `${val}°`;
             if (joint === 'headYaw') document.getElementById('head-yaw-val').innerText = `${val}°`;
             if (joint === 'spine') document.getElementById('spine-val').innerText = `${val}°`;
+            if (joint === 'knees') document.getElementById('knees-val').innerText = `${val}°`;
             if (joint === 'hips') document.getElementById('hips-val').innerText = `${parseFloat(val).toFixed(2)} m`;
         }
 
@@ -589,16 +616,26 @@
             if (avatarModel) {
                 avatarModel.position.set(spineX, spineY - 0.97, spineZ);
 
-                // Right Arm: 0° = T-Pose Baseline, +90° = Raised UP in the air, -90° = Down to side of body!
+                // Right Arm & Elbow Flexion
                 const rArmBone = bones['J_Bip_R_UpperArm'] || bones['RightArm'] || bones['RightShoulder'] || bones['RightUpperArm'];
                 if (rArmBone) {
                     rArmBone.rotation.z = THREE.MathUtils.degToRad(jointRotations.rArm);
                 }
 
-                // Left Arm: 0° = T-Pose Baseline, +90° = Raised UP in the air, -90° = Down to side of body!
+                const rElbowBone = bones['J_Bip_R_LowerArm'] || bones['RightForearm'] || bones['RightLowerArm'];
+                if (rElbowBone) {
+                    rElbowBone.rotation.y = -THREE.MathUtils.degToRad(jointRotations.rElbow);
+                }
+
+                // Left Arm & Elbow Flexion
                 const lArmBone = bones['J_Bip_L_UpperArm'] || bones['LeftArm'] || bones['LeftShoulder'] || bones['LeftUpperArm'];
                 if (lArmBone) {
                     lArmBone.rotation.z = -THREE.MathUtils.degToRad(jointRotations.lArm);
+                }
+
+                const lElbowBone = bones['J_Bip_L_LowerArm'] || bones['LeftForearm'] || bones['LeftLowerArm'];
+                if (lElbowBone) {
+                    lElbowBone.rotation.y = THREE.MathUtils.degToRad(jointRotations.lElbow);
                 }
 
                 // Head Yaw
@@ -612,6 +649,12 @@
                 if (spineBone) {
                     spineBone.rotation.x = THREE.MathUtils.degToRad(jointRotations.spine);
                 }
+
+                // Knees Flexion (Knee Bending)
+                const rKneeBone = bones['J_Bip_R_LowerLeg'] || bones['RightLeg'] || bones['RightLowerLeg'];
+                const lKneeBone = bones['J_Bip_L_LowerLeg'] || bones['LeftLeg'] || bones['LeftLowerLeg'];
+                if (rKneeBone) rKneeBone.rotation.x = THREE.MathUtils.degToRad(jointRotations.knees);
+                if (lKneeBone) lKneeBone.rotation.x = THREE.MathUtils.degToRad(jointRotations.knees);
             }
 
             // Snap 15-Point Matrix spheres DIRECTLY onto 3D VRoid Skeleton Bones 100% flush!
