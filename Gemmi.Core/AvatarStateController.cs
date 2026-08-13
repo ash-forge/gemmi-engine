@@ -92,6 +92,18 @@ public class AvatarStateController
         };
     }
 
+    // Universal Scale Invariance: Scales normalized unit-2 math to any arbitrary target height in meters
+    public JointTransform3D ComputeScaledWorldTransform(JointTransform3D normalizedTransform, float targetHeightMeters)
+    {
+        float scaleFactor = targetHeightMeters / NormalizedUnitHeight;
+        return new JointTransform3D
+        {
+            X = normalizedTransform.X * scaleFactor,
+            Y = normalizedTransform.Y * scaleFactor,
+            Z = normalizedTransform.Z * scaleFactor
+        };
+    }
+
     public string CurrentActivity { get; private set; } = "Sipping coffee, listening to lofi ambient tracks 🎧☕";
     public bool ProactiveAssistanceTriggered { get; private set; }
 
