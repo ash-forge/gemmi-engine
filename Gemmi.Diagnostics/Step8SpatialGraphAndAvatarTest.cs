@@ -95,6 +95,10 @@ public class Step8SpatialGraphAndAvatarTest
         var anchors12 = avatar.Get12PointSpatialAnchors();
         Console.WriteLine($"    • {anchors12}");
 
+        Console.WriteLine("\n -> Testing 15-Point Spatial Matrix System (3 FP Reference Planes x 5 Vector Anchors)...");
+        var matrix15 = avatar.Get15PointSpatialMatrix();
+        Console.WriteLine($"    • {matrix15}");
+
         Console.WriteLine("\n -> Simulating Code Fix Clear Event...");
         avatar.OnSpatialVisionPerception("Build succeeded. 0 Warning(s) 0 Error(s)", false);
 

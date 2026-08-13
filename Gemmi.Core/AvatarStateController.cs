@@ -48,6 +48,32 @@ public struct TwelvePointSpatialAnchors3D
     public override string ToString() => $"[12-POINT ANCHOR SYSTEM] P1(Floor):{P1_GroundCenter} | P6(Hips):{P6_CenterOfMassHips} | P8/P9(Shoulders):L{P8_LeftShoulderAnchor}/R{P9_RightShoulderAnchor} | P12(Crown):{P12_CrownZenithTop}";
 }
 
+public struct FifteenPointSpatialMatrix3D
+{
+    // Level 0: Ground Contact FP = 0.0f (5 Points)
+    public JointTransform3D Level0_CenterGround { get; set; }  // 1. (0.00, 0.00, 0.00)
+    public JointTransform3D Level0_LeftFoot { get; set; }      // 2. (+0.35, 0.00, 0.12)
+    public JointTransform3D Level0_RightFoot { get; set; }     // 3. (-0.35, 0.00, 0.12)
+    public JointTransform3D Level0_LeftAnkle { get; set; }     // 4. (+0.35, 0.15, -0.02)
+    public JointTransform3D Level0_RightAnkle { get; set; }    // 5. (-0.35, 0.15, -0.02)
+
+    // Level 1: Hips & Center of Mass FP = 1.0f (5 Points)
+    public JointTransform3D Level1_CenterHips { get; set; }   // 6. (0.00, 1.00, 0.00)
+    public JointTransform3D Level1_LeftKnee { get; set; }     // 7. (+0.35, 0.50, 0.05)
+    public JointTransform3D Level1_RightKnee { get; set; }    // 8. (-0.35, 0.50, 0.05)
+    public JointTransform3D Level1_LeftHip { get; set; }      // 9. (+0.35, 1.00, 0.00)
+    public JointTransform3D Level1_RightHip { get; set; }     // 10. (-0.35, 1.00, 0.00)
+
+    // Level 2: Crown & Upper Body FP = 2.0f (5 Points)
+    public JointTransform3D Level2_SpineChest { get; set; }   // 11. (0.00, 1.35, 0.00)
+    public JointTransform3D Level2_LeftShoulder { get; set; } // 12. (+1.85, 1.45, 0.00)
+    public JointTransform3D Level2_RightShoulder { get; set; }// 13. (-1.85, 1.45, 0.00)
+    public JointTransform3D Level2_HeadCenter { get; set; }   // 14. (0.00, 1.85, 0.00)
+    public JointTransform3D Level2_CrownZenith { get; set; }   // 15. (0.00, 2.00, 0.00)
+
+    public override string ToString() => $"[15-POINT SPATIAL MATRIX] 3 FP Reference Planes (FP 0.0, 1.0, 2.0) | 15 Vector Anchors Active";
+}
+
 public struct SpatiotemporalTransform4D
 {
     public JointTransform3D SpatialVector3D { get; set; } // (X, Y, Z) Space
@@ -214,6 +240,41 @@ public class AvatarStateController
             P10_NeckBase = new JointTransform3D { X = SpineTransform.X, Y = 1.65f, Z = SpineTransform.Z },
             P11_HeadCenter = HeadTransform,
             P12_CrownZenithTop = TopOfHeadTransform
+        };
+    }
+
+    // 15-Point Spatial Matrix System (3 Floating Point Planes x 5 Spatial Anchors)
+    public FifteenPointSpatialMatrix3D Get15PointSpatialMatrix()
+    {
+        var lKneeWorld = LeftLeg.Knee.ComputeWorldPosition(LeftLeg.Hip);
+        var rKneeWorld = RightLeg.Knee.ComputeWorldPosition(RightLeg.Hip);
+        var lAnkleWorld = LeftLeg.Ankle.ComputeWorldPosition(lKneeWorld);
+        var rAnkleWorld = RightLeg.Ankle.ComputeWorldPosition(rKneeWorld);
+        var lFootWorld = LeftLeg.Foot.ComputeWorldPosition(lAnkleWorld);
+        var rFootWorld = RightLeg.Foot.ComputeWorldPosition(rAnkleWorld);
+
+        return new FifteenPointSpatialMatrix3D
+        {
+            // Level 0: Ground Contact FP = 0.0f
+            Level0_CenterGround = GroundFeetTransform,
+            Level0_LeftFoot = lFootWorld,
+            Level0_RightFoot = rFootWorld,
+            Level0_LeftAnkle = lAnkleWorld,
+            Level0_RightAnkle = rAnkleWorld,
+
+            // Level 1: Hips & Center of Mass FP = 1.0f
+            Level1_CenterHips = MidpointHipsTransform,
+            Level1_LeftKnee = lKneeWorld,
+            Level1_RightKnee = rKneeWorld,
+            Level1_LeftHip = LeftLeg.Hip,
+            Level1_RightHip = RightLeg.Hip,
+
+            // Level 2: Upper Body & Crown FP = 2.0f
+            Level2_SpineChest = SpineTransform,
+            Level2_LeftShoulder = LeftArm.Shoulder,
+            Level2_RightShoulder = RightArm.Shoulder,
+            Level2_HeadCenter = HeadTransform,
+            Level2_CrownZenith = TopOfHeadTransform
         };
     }
 
