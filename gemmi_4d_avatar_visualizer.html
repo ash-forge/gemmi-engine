@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemmi Engine - 4D Spatiotemporal Avatar Visualizer (Three.js 3D GLB)</title>
+    <title>Gemmi Engine - Live 4D Joint & Bone Rigging Control System (Three.js)</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #0a0c14;
-            --panel-bg: rgba(16, 20, 36, 0.85);
+            --panel-bg: rgba(16, 20, 36, 0.88);
             --panel-border: rgba(120, 119, 198, 0.25);
             --accent-cyan: #00f2fe;
             --accent-blue: #4facfe;
@@ -39,7 +39,7 @@
             display: flex;
         }
 
-        /* 3D Canvas Area */
+        /* 3D Viewport */
         #canvas-container {
             flex: 1;
             height: 100%;
@@ -53,7 +53,7 @@
             display: block;
         }
 
-        /* Overlay UI HUD */
+        /* Header Overlay */
         .hud-header {
             position: absolute;
             top: 24px;
@@ -92,17 +92,17 @@
             text-transform: uppercase;
         }
 
-        /* Control Sidebar Panel */
+        /* Control Sidebar */
         #sidebar {
-            width: 380px;
+            width: 420px;
             height: 100%;
             background: var(--panel-bg);
             backdrop-filter: blur(16px);
             border-left: 1px solid var(--panel-border);
-            padding: 24px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
             z-index: 20;
             box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
             overflow-y: auto;
@@ -112,36 +112,36 @@
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 12px;
-            padding: 16px;
+            padding: 14px;
         }
 
         .panel-title {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--accent-cyan);
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
         /* Buttons & Switches */
-        .btn-group {
+        .btn-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
 
         .btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.12);
             color: var(--text-main);
-            padding: 10px 14px;
+            padding: 8px 12px;
             border-radius: 8px;
             font-family: 'Outfit', sans-serif;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -163,25 +163,25 @@
             box-shadow: 0 0 15px rgba(243, 85, 218, 0.3);
         }
 
-        /* Slider Controls */
+        /* Sliders */
         .control-row {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            margin-top: 10px;
+            gap: 4px;
+            margin-top: 8px;
         }
 
         .control-label {
             display: flex;
             justify-content: space-between;
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-dim);
             font-family: 'JetBrains Mono', monospace;
         }
 
         .slider {
             width: 100%;
-            height: 6px;
+            height: 5px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
             outline: none;
@@ -193,7 +193,7 @@
         .telemetry-grid {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             color: #b0c4de;
@@ -202,7 +202,7 @@
         .telemetry-row {
             display: flex;
             justify-content: space-between;
-            padding: 4px 0;
+            padding: 3px 0;
             border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
         }
 
@@ -216,9 +216,9 @@
             position: absolute;
             bottom: 24px;
             left: 24px;
-            width: 180px;
-            height: 180px;
-            background: rgba(10, 14, 28, 0.8);
+            width: 160px;
+            height: 160px;
+            background: rgba(10, 14, 28, 0.85);
             border: 1px solid rgba(0, 245, 212, 0.3);
             border-radius: 50%;
             box-shadow: 0 0 20px rgba(0, 245, 212, 0.15);
@@ -248,53 +248,96 @@
         }
     </style>
 
-    <!-- Include Three.js & GLTFLoader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
-    <!-- 3D Canvas Viewport -->
     <div id="canvas-container">
         <div class="hud-header">
-            <h1>🧠 GEMMI 4D AVATAR <span class="badge-4d">15-Point GLB Model</span></h1>
-            <p>Haven UniGLTF 3D Avatar Mesh (avatar_456071c0b8ea484a89dfaeddf11c5138.glb)</p>
+            <h1>🧠 GEMMI 4D AVATAR <span class="badge-4d">Live Joint Rigging</span></h1>
+            <p>Interactive 3D VRoid Bone Joint Manipulation (avatar_456071c0b8ea484a89dfaeddf11c5138.glb)</p>
         </div>
 
         <div id="status-indicator">⌛ Loading Haven 3D Avatar GLB Model...</div>
 
         <canvas id="view3d"></canvas>
 
-        <!-- 360-Degree Radar Display -->
         <div id="radar-container">
-            <canvas id="radar-canvas" width="180" height="180"></canvas>
+            <canvas id="radar-canvas" width="160" height="160"></canvas>
         </div>
     </div>
 
-    <!-- Control & Telemetry Sidebar -->
     <div id="sidebar">
         
-        <!-- State Selector -->
+        <!-- Action Animations -->
         <div class="panel-section">
-            <div class="panel-title">🛋️ Avatar Motion State</div>
-            <div class="btn-group">
+            <div class="panel-title">🎭 Expressive Action Presets</div>
+            <div class="btn-grid">
+                <button class="btn" onclick="triggerAction('wave')">👋 Wave Hello</button>
+                <button class="btn" onclick="triggerAction('bow')">🙇 Respectful Bow</button>
+                <button class="btn" onclick="triggerAction('nod')">🗣️ Head Nod</button>
+                <button class="btn" onclick="triggerAction('dance')">🕺 Dance Groove</button>
+            </div>
+            <div style="margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <button class="btn active" id="btn-cozy" onclick="setAvatarState('cozy')">☕ Cozy Chair</button>
-                <button class="btn" id="btn-lean" onclick="setAvatarState('lean')">🔍 Proactive Help</button>
+                <button class="btn" id="btn-walk" onclick="setAvatarState('walk')">🚶‍♂️ 4D Walk</button>
             </div>
-            <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="btn" id="btn-stand" onclick="setAvatarState('stand')">🧘 Standing (FP=2.0)</button>
-                <button class="btn" id="btn-walk" onclick="setAvatarState('walk')">🚶‍♂️ Walk to Radar</button>
-            </div>
-            <div style="margin-top: 10px;">
-                <button class="btn active" id="btn-skeleton" onclick="toggleSkeletonWireframe()" style="width: 100%;">💎 Toggle 15-Point Matrix Overlay</button>
+            <div style="margin-top: 8px;">
+                <button class="btn active" id="btn-skeleton" onclick="toggleSkeletonWireframe()" style="width: 100%;">💎 Toggle 15-Point Wireframe</button>
             </div>
         </div>
 
-        <!-- Height Scale Invariance -->
+        <!-- Real-Time Joint Slider Rigging Controls -->
+        <div class="panel-section">
+            <div class="panel-title">🕹️ Live 3D Joint Rigging Controllers</div>
+            
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Right Arm Wave Pitch:</span>
+                    <span id="r-arm-val" class="telemetry-val">0°</span>
+                </div>
+                <input type="range" class="slider" id="r-arm-slider" min="-120" max="120" value="0" oninput="onJointSlider('rArm', this.value)">
+            </div>
+
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Left Arm Reach Pitch:</span>
+                    <span id="l-arm-val" class="telemetry-val">0°</span>
+                </div>
+                <input type="range" class="slider" id="l-arm-slider" min="-120" max="120" value="0" oninput="onJointSlider('lArm', this.value)">
+            </div>
+
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Head Yaw (Look L/R):</span>
+                    <span id="head-yaw-val" class="telemetry-val">0°</span>
+                </div>
+                <input type="range" class="slider" id="head-yaw-slider" min="-60" max="60" value="0" oninput="onJointSlider('headYaw', this.value)">
+            </div>
+
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Spine Pitch (Bow / Lean):</span>
+                    <span id="spine-val" class="telemetry-val">0°</span>
+                </div>
+                <input type="range" class="slider" id="spine-slider" min="-45" max="45" value="0" oninput="onJointSlider('spine', this.value)">
+            </div>
+
+            <div class="control-row">
+                <div class="control-label">
+                    <span>Hips Vertical Bounce Y:</span>
+                    <span id="hips-val" class="telemetry-val">0.97 m</span>
+                </div>
+                <input type="range" class="slider" id="hips-slider" min="0.40" max="1.50" step="0.02" value="0.97" oninput="onJointSlider('hips', this.value)">
+            </div>
+        </div>
+
+        <!-- Scale Invariance -->
         <div class="panel-section">
             <div class="panel-title">📏 Scale Invariance (0.30m - 10.0m)</div>
-            <div class="btn-group">
+            <div class="btn-grid">
                 <button class="btn" onclick="setTargetHeight(0.30)">📱 Widget (0.3m)</button>
                 <button class="btn" onclick="setTargetHeight(1.75)">🧍 Human (1.75m)</button>
             </div>
@@ -307,63 +350,39 @@
             </div>
         </div>
 
-        <!-- 15-Point Matrix Live Telemetry -->
+        <!-- Telemetry Box -->
         <div class="panel-section">
-            <div class="panel-title">💎 15-Point Spatial Matrix</div>
+            <div class="panel-title">💎 15-Point Matrix Joint Vectors</div>
             <div class="telemetry-grid">
                 <div class="telemetry-row">
-                    <span>P15 Top Crown (FP=2.0):</span>
-                    <span id="tel-crown" class="telemetry-val">(0.00, 2.00, 0.00)</span>
+                    <span>P15 Top Crown:</span>
+                    <span id="tel-crown" class="telemetry-val">(0.00, 1.70, 0.00)</span>
                 </div>
                 <div class="telemetry-row">
-                    <span>P14 Head Center:</span>
-                    <span id="tel-head" class="telemetry-val">(0.00, 1.85, 0.00)</span>
+                    <span>P13 Head Center:</span>
+                    <span id="tel-head" class="telemetry-val">(0.00, 1.55, 0.00)</span>
                 </div>
                 <div class="telemetry-row">
-                    <span>P12/13 Shoulders:</span>
-                    <span id="tel-shoulders" class="telemetry-val">L+1.85 / R-1.85</span>
+                    <span>P10/11 Shoulders:</span>
+                    <span id="tel-shoulders" class="telemetry-val">L+0.22 / R-0.22</span>
                 </div>
                 <div class="telemetry-row">
-                    <span>P6 Hips Center (FP=1.0):</span>
-                    <span id="tel-hips" class="telemetry-val">(0.00, 1.00, 0.00)</span>
+                    <span>P6 Hips Center:</span>
+                    <span id="tel-hips" class="telemetry-val">(0.00, 0.97, 0.00)</span>
                 </div>
                 <div class="telemetry-row">
-                    <span>P7/8 Knees Pivot:</span>
-                    <span id="tel-knees" class="telemetry-val">Y = 0.50f</span>
+                    <span>P4/5 Knees Base:</span>
+                    <span id="tel-knees" class="telemetry-val">Y = 0.52f</span>
                 </div>
                 <div class="telemetry-row">
-                    <span>P4/5 Ankles Base:</span>
-                    <span id="tel-ankles" class="telemetry-val">Y = 0.15f</span>
-                </div>
-                <div class="telemetry-row">
-                    <span>P1 Ground Plane (FP=0.0):</span>
+                    <span>P1 Ground Plane:</span>
                     <span id="tel-ground" class="telemetry-val">(0.00, 0.00, 0.00)</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4D Spatiotemporal Telemetry -->
-        <div class="panel-section">
-            <div class="panel-title">🌌 4D Spatiotemporal Vector</div>
-            <div class="telemetry-grid">
-                <div class="telemetry-row">
-                    <span>Time Tick (UtcTicks):</span>
-                    <span id="tel-time" class="telemetry-val">00:00:00.000</span>
-                </div>
-                <div class="telemetry-row">
-                    <span>Proactive Lean Delta:</span>
-                    <span id="tel-lean-delta" class="telemetry-val">ΔZ=0.00, ΔX=0.00</span>
-                </div>
-                <div class="telemetry-row">
-                    <span>Stance Equilibrium:</span>
-                    <span id="tel-stance" class="telemetry-val">Cozy Seated</span>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- Three.js 3D Renderer Script -->
     <script>
         const container = document.getElementById('canvas-container');
         const viewCanvas = document.getElementById('view3d');
@@ -371,7 +390,7 @@
         const radarCtx = radarCanvas.getContext('2d');
         const statusEl = document.getElementById('status-indicator');
 
-        // Three.js Scene setup
+        // Scene setup
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0c14);
 
@@ -387,7 +406,7 @@
         controls.target.set(0, 1.0, 0);
         controls.update();
 
-        // Lighting Setup
+        // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
@@ -400,19 +419,31 @@
         rimLight.position.set(-2, 2, -2);
         scene.add(rimLight);
 
-        // Ground Plane Grid
+        // Grid
         const gridHelper = new THREE.GridHelper(10, 20, 0x00f2fe, 0x1a233d);
         gridHelper.position.y = 0;
         scene.add(gridHelper);
 
-        // Kinematic Variables
+        // State & Joint variables
         let currentState = 'cozy';
+        let activeAction = null;
+        let actionTime = 0;
         let targetHeight = 1.75;
         let showSkeletonOverlay = true;
+
         let avatarModel = null;
         let bones = {};
 
-        // 15-Point Wireframe Visualizer Group
+        // Interactive joint rotations
+        const jointRotations = {
+            rArm: 0,
+            lArm: 0,
+            headYaw: 0,
+            spine: 0,
+            hipsY: 0.97
+        };
+
+        // 15-Point Wireframe Spheres
         const skeletonGroup = new THREE.Group();
         scene.add(skeletonGroup);
 
@@ -421,7 +452,7 @@
         const crownMaterial = new THREE.MeshBasicMaterial({ color: 0xf355da });
 
         for (let i = 0; i < 15; i++) {
-            const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), i === 14 ? crownMaterial : jointMaterial);
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 12), i === 14 ? crownMaterial : jointMaterial);
             skeletonGroup.add(sphere);
             jointSpheres.push(sphere);
         }
@@ -435,11 +466,11 @@
             avatarModel.scale.set(1.0, 1.0, 1.0);
             scene.add(avatarModel);
 
-            statusEl.innerText = "✓ Haven 3D Avatar GLB Loaded (VRoid UniGLTF)";
+            statusEl.innerText = "✓ Haven 3D Avatar GLB Loaded & Joint Rigged";
             statusEl.style.borderColor = "#00f5d4";
             statusEl.style.color = "#00f5d4";
 
-            // Traverse skeleton bones
+            // Bone traversal
             avatarModel.traverse((child) => {
                 if (child.isBone) {
                     bones[child.name] = child;
@@ -456,15 +487,23 @@
             statusEl.innerText = `⌛ Loading Haven 3D Avatar GLB: ${pct}%`;
         }, (err) => {
             console.error("GLB Load Error:", err);
-            statusEl.innerText = "⚠️ GLB HTTP Server Offline. Showing 15-Point Skinned Mesh";
+            statusEl.innerText = "⚠️ GLB Asset Server Offline";
             statusEl.style.borderColor = "#ffb703";
             statusEl.style.color = "#ffb703";
         });
 
         function setAvatarState(state) {
             currentState = state;
-            document.querySelectorAll('#btn-cozy, #btn-lean, #btn-stand').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${state}`).classList.add('active');
+            activeAction = null;
+            document.querySelectorAll('#btn-cozy, #btn-walk').forEach(b => b.classList.remove('active'));
+            if (document.getElementById(`btn-${state}`)) {
+                document.getElementById(`btn-${state}`).classList.add('active');
+            }
+        }
+
+        function triggerAction(action) {
+            activeAction = action;
+            actionTime = Date.now();
         }
 
         function toggleSkeletonWireframe() {
@@ -486,6 +525,15 @@
             setTargetHeight(parseFloat(val));
         }
 
+        function onJointSlider(joint, val) {
+            jointRotations[joint] = parseFloat(val);
+            if (joint === 'rArm') document.getElementById('r-arm-val').innerText = `${val}°`;
+            if (joint === 'lArm') document.getElementById('l-arm-val').innerText = `${val}°`;
+            if (joint === 'headYaw') document.getElementById('head-yaw-val').innerText = `${val}°`;
+            if (joint === 'spine') document.getElementById('spine-val').innerText = `${val}°`;
+            if (joint === 'hips') document.getElementById('hips-val').innerText = `${parseFloat(val).toFixed(2)} m`;
+        }
+
         // Radar Objects
         const radarObjects = [
             { name: "Coffee Mug", x: 0.25, z: -0.05, color: "#00f5d4" },
@@ -494,49 +542,78 @@
             { name: "NAS Server", x: -2.10, z: -1.20, color: "#f355da" }
         ];
 
-        let spineX = 0.0, spineY = 1.0, spineZ = 0.0;
+        let spineX = 0.0, spineY = 0.97, spineZ = 0.0;
 
         function animate() {
             requestAnimationFrame(animate);
 
-            // Animate Kinematics
             const time = Date.now() * 0.003;
+            const dt = (Date.now() - actionTime) * 0.003;
 
-            if (currentState === 'cozy') {
-                spineX += (0.0 - spineX) * 0.1;
-                spineY += (1.0 - spineY) * 0.1;
-                spineZ += (0.0 - spineZ) * 0.1;
-                document.getElementById('tel-stance').innerText = "Cozy Seated (Sipping Coffee 🎧)";
-                document.getElementById('tel-lean-delta').innerText = "ΔZ=0.00m, ΔX=0.00m";
-            } else if (currentState === 'lean') {
-                spineX += (0.23 - spineX) * 0.1;
-                spineY += (0.95 - spineY) * 0.1;
-                spineZ += (-0.05 - spineZ) * 0.1;
-                document.getElementById('tel-stance').innerText = "Proactive Help (Leaning Forward 🔍)";
-                document.getElementById('tel-lean-delta').innerText = "ΔZ=-0.05m, ΔX=+0.23m";
-            } else if (currentState === 'stand') {
-                spineX += (0.0 - spineX) * 0.1;
-                spineY += (1.0 - spineY) * 0.1;
-                spineZ += (0.0 - spineZ) * 0.1;
-                document.getElementById('tel-stance').innerText = "Standing Erect (Neutral Balance 🧘)";
-                document.getElementById('tel-lean-delta').innerText = "ΔZ=0.00m, ΔX=0.00m";
-            } else if (currentState === 'walk') {
-                spineX = 1.2 * Math.sin(time * 0.5);
-                spineZ = 0.4 * Math.cos(time * 0.5);
-                spineY = 1.0 + Math.abs(Math.sin(time * 2)) * 0.05;
-                document.getElementById('tel-stance').innerText = "4D Walking Gait Locomotion 🚶‍♂️";
-                document.getElementById('tel-lean-delta').innerText = `ΔZ=${spineZ.toFixed(2)}m, ΔX=${spineX.toFixed(2)}m`;
+            // Handle Action Presets
+            if (activeAction === 'wave') {
+                jointRotations.rArm = 80 + Math.sin(time * 8) * 35;
+                document.getElementById('r-arm-slider').value = jointRotations.rArm;
+                document.getElementById('r-arm-val').innerText = `${jointRotations.rArm.toFixed(0)}°`;
+            } else if (activeAction === 'bow') {
+                jointRotations.spine = 35 + Math.sin(time * 2) * 5;
+                document.getElementById('spine-slider').value = jointRotations.spine;
+                document.getElementById('spine-val').innerText = `${jointRotations.spine.toFixed(0)}°`;
+            } else if (activeAction === 'nod') {
+                jointRotations.headYaw = Math.sin(time * 6) * 30;
+                document.getElementById('head-yaw-slider').value = jointRotations.headYaw;
+                document.getElementById('head-yaw-val').innerText = `${jointRotations.headYaw.toFixed(0)}°`;
+            } else if (activeAction === 'dance') {
+                jointRotations.rArm = Math.sin(time * 5) * 60;
+                jointRotations.lArm = Math.cos(time * 5) * 60;
+                jointRotations.headYaw = Math.sin(time * 4) * 25;
+                spineX = Math.sin(time * 2) * 0.3;
+                document.getElementById('r-arm-slider').value = jointRotations.rArm;
+                document.getElementById('l-arm-slider').value = jointRotations.lArm;
             }
 
-            // Move 3D Avatar Model Position
+            // Kinematic Locomotion / Position
+            if (currentState === 'walk' && activeAction !== 'dance') {
+                spineX = 1.2 * Math.sin(time * 0.5);
+                spineZ = 0.4 * Math.cos(time * 0.5);
+                spineY = 0.97 + Math.abs(Math.sin(time * 2)) * 0.05;
+            } else if (currentState === 'cozy' && activeAction !== 'dance') {
+                spineX += (0.0 - spineX) * 0.1;
+                spineZ += (0.0 - spineZ) * 0.1;
+                spineY = jointRotations.hipsY;
+            }
+
+            // Apply Rotations to 3D VRoid Skeleton Bones
             if (avatarModel) {
-                avatarModel.position.set(spineX, spineY - 1.0, spineZ);
-                if (bones['Hips']) {
-                    bones['Hips'].position.y = 0.97 + Math.sin(time) * 0.02;
+                avatarModel.position.set(spineX, spineY - 0.97, spineZ);
+
+                // Find and rotate bones
+                const rArmBone = bones['J_Bip_R_UpperArm'] || bones['RightArm'] || bones['RightShoulder'] || bones['RightUpperArm'];
+                if (rArmBone) {
+                    rArmBone.rotation.z = -THREE.MathUtils.degToRad(jointRotations.rArm);
+                }
+
+                const lArmBone = bones['J_Bip_L_UpperArm'] || bones['LeftArm'] || bones['LeftShoulder'] || bones['LeftUpperArm'];
+                if (lArmBone) {
+                    lArmBone.rotation.z = THREE.MathUtils.degToRad(jointRotations.lArm);
+                }
+
+                const headBone = bones['J_Bip_C_Head'] || bones['Head'];
+                if (headBone) {
+                    headBone.rotation.y = THREE.MathUtils.degToRad(jointRotations.headYaw);
+                }
+
+                const spineBone = bones['J_Bip_C_Spine'] || bones['Spine'] || bones['Chest'];
+                if (spineBone) {
+                    spineBone.rotation.x = THREE.MathUtils.degToRad(jointRotations.spine);
                 }
             }
 
-            // Update 15-Point Wireframe Spheres Position (Aligned 1-to-1 with VRoid Character Bones)
+            // Update 15-Point Wireframe Spheres Position
+            const radRArm = THREE.MathUtils.degToRad(jointRotations.rArm);
+            const radLArm = THREE.MathUtils.degToRad(jointRotations.lArm);
+            const radSpine = THREE.MathUtils.degToRad(jointRotations.spine);
+
             const p = [
                 [spineX, 0.0, spineZ],                           // 1. Center Ground Origin
                 [spineX + 0.07, 0.10, spineZ + 0.02],            // 2. Left Ankle
@@ -546,13 +623,13 @@
                 [spineX, spineY - 0.03, spineZ],                 // 6. Hips Pelvis Center (Y = 0.97m)
                 [spineX + 0.07, spineY - 0.12, spineZ],          // 7. Left Hip
                 [spineX - 0.07, spineY - 0.12, spineZ],          // 8. Right Hip
-                [spineX, spineY + 0.25, spineZ],                 // 9. Spine Chest (Y = 1.25m)
-                [spineX + 0.22, spineY + 0.35, spineZ],          // 10. Left Shoulder (Y = 1.35m)
-                [spineX - 0.22, spineY + 0.35, spineZ],          // 11. Right Shoulder (Y = 1.35m)
-                [spineX, spineY + 0.45, spineZ],                 // 12. Neck Base (Y = 1.45m)
-                [spineX, spineY + 0.55, spineZ],                 // 13. Head Center (Y = 1.55m)
-                [spineX, spineY + 0.70, spineZ],                 // 14. Crown Top (Y = 1.70m)
-                [spineX, spineY + 0.85, spineZ]                  // 15. Crown Zenith (Y = 1.85m)
+                [spineX, spineY + 0.25, spineZ - radSpine*0.2],  // 9. Spine Chest (Y = 1.25m)
+                [spineX + 0.22, spineY + 0.35 + Math.sin(radLArm)*0.2, spineZ], // 10. Left Shoulder
+                [spineX - 0.22, spineY + 0.35 + Math.sin(radRArm)*0.2, spineZ], // 11. Right Shoulder
+                [spineX, spineY + 0.45, spineZ],                 // 12. Neck Base
+                [spineX, spineY + 0.55, spineZ],                 // 13. Head Center
+                [spineX, spineY + 0.70, spineZ],                 // 14. Crown Top
+                [spineX, spineY + 0.85, spineZ]                  // 15. Crown Zenith
             ];
 
             for (let i = 0; i < 15; i++) {
@@ -561,9 +638,8 @@
 
             // Telemetry Updates
             const now = new Date();
-            document.getElementById('tel-time').innerText = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
-            document.getElementById('tel-crown').innerText = `(${spineX.toFixed(2)}, ${(spineY + 1.0).toFixed(2)}, ${spineZ.toFixed(2)})`;
-            document.getElementById('tel-head').innerText = `(${spineX.toFixed(2)}, ${(spineY + 0.85).toFixed(2)}, ${spineZ.toFixed(2)})`;
+            document.getElementById('tel-crown').innerText = `(${spineX.toFixed(2)}, ${(spineY + 0.73).toFixed(2)}, ${spineZ.toFixed(2)})`;
+            document.getElementById('tel-head').innerText = `(${spineX.toFixed(2)}, ${(spineY + 0.58).toFixed(2)}, ${spineZ.toFixed(2)})`;
             document.getElementById('tel-hips').innerText = `(${spineX.toFixed(2)}, ${spineY.toFixed(2)}, ${spineZ.toFixed(2)})`;
 
             drawRadar();
