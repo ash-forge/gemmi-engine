@@ -386,6 +386,43 @@
             </div>
         </div>
 
+        <!-- Voice Dialogue & Audio Spectrum -->
+        <div class="panel-section">
+            <div class="panel-title">🎙️ Sovereign Voice Dialogue & Audio Spectrum</div>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                <input type="text" id="speak-input" placeholder="Type words for Gemmi to speak..." style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 245, 212, 0.4); border-radius: 6px; padding: 6px 10px; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                <button class="btn" style="padding: 6px 12px; font-size: 11px;" onclick="sendSpeechText()">🗣️ Speak</button>
+            </div>
+            <div style="height: 36px; background: rgba(0,0,0,0.6); border: 1px solid rgba(0,245,212,0.2); border-radius: 6px; display: flex; align-items: flex-end; justify-content: space-between; padding: 4px 6px; gap: 3px;" id="audio-eq-container">
+                <!-- 16 Equalizer Spectrum Bars -->
+                <div class="eq-bar" style="flex:1; background: var(--accent-cyan); height: 10%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-cyan); height: 15%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-cyan); height: 25%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-cyan); height: 40%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-cyan); height: 60%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-green); height: 75%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-green); height: 90%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-green); height: 80%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-green); height: 65%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-green); height: 50%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-pink); height: 35%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-pink); height: 20%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-pink); height: 15%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-pink); height: 10%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-pink); height: 8%; border-radius: 2px; transition: height 0.05s ease;"></div>
+                <div class="eq-bar" style="flex:1; background: var(--accent-pink); height: 5%; border-radius: 2px; transition: height 0.05s ease;"></div>
+            </div>
+        </div>
+
+        <!-- Autonomous Cognition & Internal Monologue -->
+        <div class="panel-section">
+            <div class="panel-title">🧠 Autonomous Agency & Spontaneous Monologue</div>
+            <div id="thought-box" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 245, 212, 0.3); border-radius: 6px; padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #00f5d4; min-height: 48px; line-height: 1.4;">
+                [SpatialAwareness] Ready and observing room space at 60 FPS...
+            </div>
+            <button class="btn" style="width: 100%; margin-top: 6px; font-size: 11px;" onclick="triggerSpontaneousThought()">✨ Trigger Spontaneous Thought Spark</button>
+        </div>
+
         <!-- Telemetry Box -->
         <div class="panel-section">
             <div class="panel-title">💎 15-Point Matrix Joint Vectors</div>
@@ -589,6 +626,19 @@
                                 currentMorphs[k] = v;
                             }
                         }
+                        if (data.recentThought) {
+                            const thoughtEl = document.getElementById('thought-box');
+                            if (thoughtEl) {
+                                thoughtEl.innerText = data.recentThought;
+                            }
+                        }
+                        if (data.audioWaveformBands && Array.isArray(data.audioWaveformBands)) {
+                            const bars = document.querySelectorAll('#audio-eq-container .eq-bar');
+                            for (let i = 0; i < Math.min(bars.length, data.audioWaveformBands.length); i++) {
+                                let h = Math.max(5, Math.min(100, data.audioWaveformBands[i] * 100));
+                                bars[i].style.height = `${h}%`;
+                            }
+                        }
                     } catch (e) { }
                 };
                 telemetrySocket.onclose = () => {
@@ -605,6 +655,27 @@
                 try {
                     telemetrySocket.send(JSON.stringify(cmd));
                 } catch (e) { }
+            }
+        }
+
+        function sendSpeechText() {
+            const input = document.getElementById('speak-input');
+            if (input && input.value.trim().length > 0) {
+                const text = input.value.trim();
+                sendServerCommand({ speak: text });
+                const thoughtEl = document.getElementById('thought-box');
+                if (thoughtEl) {
+                    thoughtEl.innerText = `[Spoken Dialogue] "${text}"`;
+                }
+                input.value = '';
+            }
+        }
+
+        function triggerSpontaneousThought() {
+            sendServerCommand({ action: 'spontaneous_thought' });
+            const thoughtEl = document.getElementById('thought-box');
+            if (thoughtEl) {
+                thoughtEl.innerText = `[✨ 'OH SHINY!' ASSOCIATIVE LEAP] Generating spontaneous cognitive spark...`;
             }
         }
 

@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Gemmi.Core\Gemmi.Core.csproj" />
+    <ProjectReference Include="..\Gemmi.Hardware\Gemmi.Hardware.csproj" />
   </ItemGroup>
 
   <ItemGroup>

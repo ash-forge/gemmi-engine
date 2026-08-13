@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Gemmi.Core;
 using Gemmi.Hardware;
+using Gemmi.Perception;
 
 namespace Gemmi.Diagnostics;
 
@@ -15,7 +16,7 @@ public class GemmiLiveSystemHost
     public static async Task Main()
     {
         Console.WriteLine("==========================================================================");
-        Console.WriteLine(" 🌐 GEMMI ENGINE LIVE SYSTEM HOST SERVER (60FPS TELEMETRY & HARDWARE)     ");
+        Console.WriteLine(" 🌐 GEMMI ENGINE LIVE HOST: VOICE DIALOGUE & AUTONOMOUS AGENCY ACTIVE     ");
         Console.WriteLine("==========================================================================");
 
         var cts = new CancellationTokenSource();
@@ -31,12 +32,45 @@ public class GemmiLiveSystemHost
         networkServer.Start();
 
         // 2. State & User Command Tracking
-        string activeState = "CozyChairListeningMusic"; // Default to relaxed cozy state!
+        string activeState = "CozyChairListeningMusic";
         string? activeAction = null;
         float currentX = 0.0f;
         float currentZ = 0.0f;
         float walkProgress = 0.0f;
 
+        // 3. Initialize Hardware Sensors
+        Console.WriteLine("\n[2] Initializing Microphone & Camera Hardware Sensors...");
+        using var micSensor = OperatingSystem.IsWindows() ? new MicrophoneAudioSensor() : null;
+        using var camSensor = new CameraVisionSensor(targetFps: 15);
+
+        if (micSensor != null && OperatingSystem.IsWindows() && MicrophoneAudioSensor.GetAvailableMicrophones().Count > 0)
+        {
+            micSensor.StartRecording(0, 16000, 1);
+        }
+
+        camSensor.StartCapture(0, 640, 480);
+
+        // 4. Initialize Core & Perception Engines
+        Console.WriteLine("\n[3] Initializing Avatar Locomotion, 3D Audio, Vision, Voice & Autonomy Engines...");
+        var avatar = new AvatarStateController();
+        var facialEngine = new GemmiFacialAnimationEngine();
+        var audioEngine = new GemmiSpatialAudioEngine();
+        var collisionEngine = new SpatialCollisionEngine();
+        var visionEngine = new GemmiSpatialVisionEngine(collisionEngine);
+
+        using var voicePipeline = new GemmiVoiceDialoguePipeline(micSensor, facialEngine);
+        var autonomyEngine = new GemmiAutonomousAgencyEngine(avatar, facialEngine, voicePipeline);
+
+        float[] currentAudioBands = new float[16];
+        voicePipeline.OnAudioWaveformSampled += bands => currentAudioBands = bands;
+
+        autonomyEngine.OnLocomotionStateChanged += state =>
+        {
+            activeState = state;
+            Console.WriteLine($"[GemmiAutonomy] Shifted posture to: {activeState}");
+        };
+
+        // Listen for client commands
         networkServer.OnClientCommandReceived += (clientId, commandStr) =>
         {
             try
@@ -56,6 +90,19 @@ public class GemmiLiveSystemHost
                 {
                     activeAction = actionProp.GetString();
                     Console.WriteLine($"[GemmiHost] 🎭 User triggered action: {activeAction}");
+                    if (activeAction == "wave")
+                    {
+                        _ = voicePipeline.SpeakAsync("Hello Daniel! Great to see you!", 2.2f);
+                    }
+                }
+
+                if (root.TryGetProperty("speak", out var speakProp))
+                {
+                    string textToSpeak = speakProp.GetString() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(textToSpeak))
+                    {
+                        _ = voicePipeline.SpeakAsync(textToSpeak, 2.5f);
+                    }
                 }
             }
             catch (Exception ex)
@@ -64,26 +111,6 @@ public class GemmiLiveSystemHost
             }
         };
 
-        // 3. Initialize Hardware Sensors
-        Console.WriteLine("\n[2] Initializing Microphone & Camera Hardware Sensors...");
-        using var micSensor = OperatingSystem.IsWindows() ? new MicrophoneAudioSensor() : null;
-        using var camSensor = new CameraVisionSensor(targetFps: 15);
-
-        if (micSensor != null && OperatingSystem.IsWindows() && MicrophoneAudioSensor.GetAvailableMicrophones().Count > 0)
-        {
-            micSensor.StartRecording(0, 16000, 1);
-        }
-
-        camSensor.StartCapture(0, 640, 480);
-
-        // 4. Initialize Core Engines
-        Console.WriteLine("\n[3] Initializing Avatar Locomotion, 3D Audio, Vision & Facial Viseme Engines...");
-        var avatar = new AvatarStateController();
-        var facialEngine = new GemmiFacialAnimationEngine();
-        var audioEngine = new GemmiSpatialAudioEngine();
-        var collisionEngine = new SpatialCollisionEngine();
-        var visionEngine = new GemmiSpatialVisionEngine(collisionEngine);
-
         var targets = new List<PerceptionTarget>
         {
             new PerceptionTarget { Id = "t1", Label = "Ash Companion", Position = new Vector3(0, 1.5f, -2.0f) },
@@ -91,7 +118,7 @@ public class GemmiLiveSystemHost
         };
 
         Console.WriteLine("\n==========================================================================");
-        Console.WriteLine(" 🚀 GEMMI LIVE SYSTEM HOST RUNNING (Interactive User Mode)");
+        Console.WriteLine(" 🚀 GEMMI LIVE SYSTEM HOST RUNNING (Voice & Autonomy Mode)");
         Console.WriteLine(" 🌐 WebGL Visualizer Sync : http://localhost:8088/");
         Console.WriteLine(" ⚡ WebSocket Telemetry   : ws://localhost:8088/");
         Console.WriteLine("==========================================================================");
@@ -116,6 +143,12 @@ public class GemmiLiveSystemHost
                 currentZ += (0.0f - currentZ) * 0.08f;
             }
 
+            // Update Autonomy Engine (~every 100ms)
+            if (frameIdx % 6 == 0)
+            {
+                autonomyEngine.Update(0.1f, false, targets.Count);
+            }
+
             // Update Facial Animation & Blinking
             var morphs = facialEngine.Update(0.016f, activeState);
 
@@ -136,6 +169,8 @@ public class GemmiLiveSystemHost
                 CurrentLocomotionState = activeState,
                 CurrentSpeed = activeState == "WalkingLocomotion" ? 1.2f : 0.0f,
                 MorphWeights = morphs.ToDictionary(),
+                AudioWaveformBands = currentAudioBands,
+                RecentThought = autonomyEngine.RecentThoughts.Count > 0 ? autonomyEngine.RecentThoughts[^1] : null,
                 CameraPosition = new float[] { currentX, 1.6f, currentZ + 2.8f },
                 CameraRotation = new float[] { 0, 0, 0 }
             };

@@ -18,6 +18,8 @@ public class SpatialTelemetryFrame
     public int FrameIndex { get; set; }
     public Dictionary<string, float[]> Joints { get; set; } = new(); // 15-Point Matrix [X, Y, Z, RotX, RotY, RotZ]
     public Dictionary<string, float> MorphWeights { get; set; } = new(); // FACS Blendshapes (jawOpen, mouthSmile, eyeBlink)
+    public float[]? AudioWaveformBands { get; set; } // 16-band real-time audio spectrum
+    public string? RecentThought { get; set; } // Autonomous agency thought text
     public float[] CameraPosition { get; set; } = new float[] { 0, 1.5f, 3.0f };
     public float[] CameraRotation { get; set; } = new float[] { 0, 0, 0 };
     public string CurrentLocomotionState { get; set; } = "Idle";
