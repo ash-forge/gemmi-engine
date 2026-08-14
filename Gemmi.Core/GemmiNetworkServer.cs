@@ -73,6 +73,29 @@ public class GemmiNetworkServer
         _httpListener = new HttpListener();
         _httpListener.Prefixes.Add($"http://localhost:{_port}/");
         _httpListener.Prefixes.Add($"http://127.0.0.1:{_port}/");
+
+        try
+        {
+            foreach (var ni in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (ni.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up)
+                {
+                    foreach (var ip in ni.GetIPProperties().UnicastAddresses)
+                    {
+                        if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                        {
+                            string pfx = $"http://{ip.Address}:{_port}/";
+                            if (!_httpListener.Prefixes.Contains(pfx))
+                            {
+                                try { _httpListener.Prefixes.Add(pfx); } catch { }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+
         _httpListener.Start();
 
         _isRunning = true;
