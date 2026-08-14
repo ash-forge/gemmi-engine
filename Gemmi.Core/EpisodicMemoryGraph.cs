@@ -109,6 +109,11 @@ public class EpisodicMemoryGraph
         return matches.OrderBy(m => m.DistanceMeters).ToList();
     }
 
+    public IEnumerable<GraphNode> FindHighWeightConcepts(float minWeight = 0.85f)
+    {
+        return _nodes.Values.Where(n => n.Weight >= minWeight);
+    }
+
     public void Clear()
     {
         _nodes.Clear();

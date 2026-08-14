@@ -30,6 +30,8 @@ public class WorkingMemoryBuffer
     private readonly ConcurrentQueue<MemoryEntry> _buffer = new();
     private readonly int _maxCapacity;
 
+    public event Action<MemoryEntry>? OnObservationAdded;
+
     public int Count => _buffer.Count;
 
     public WorkingMemoryBuffer(int maxCapacity = 500)
@@ -48,6 +50,7 @@ public class WorkingMemoryBuffer
         };
 
         _buffer.Enqueue(entry);
+        OnObservationAdded?.Invoke(entry);
 
         // Maintain fixed ring buffer size in RAM
         while (_buffer.Count > _maxCapacity && _buffer.TryDequeue(out _))

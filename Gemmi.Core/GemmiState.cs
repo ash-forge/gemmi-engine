@@ -68,9 +68,12 @@ public class GemmiState
     public MemoryQueryEngine MemoryQuery { get; }
     public AsyncMemoryStore MemoryStore { get; } = new();
     public BinaryMemoryStore BinaryStore { get; } = new();
+    public GemmiMemoryConsolidationEngine ConsolidationEngine { get; }
 
     public GemmiState()
     {
         MemoryQuery = new MemoryQueryEngine(MemoryBuffer, MemoryGraph);
+        ConsolidationEngine = new GemmiMemoryConsolidationEngine(MemoryBuffer, MemoryGraph, BinaryStore, 0.85f);
+        ConsolidationEngine.Start();
     }
 }
