@@ -96,12 +96,21 @@ public class GemmiLiveSystemHost
                     }
                 }
 
+                if (root.TryGetProperty("chat", out var chatProp))
+                {
+                    string userMsg = chatProp.GetString() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(userMsg))
+                    {
+                        _ = autonomyEngine.ProcessUserMessageAsync(userMsg);
+                    }
+                }
+
                 if (root.TryGetProperty("speak", out var speakProp))
                 {
                     string textToSpeak = speakProp.GetString() ?? string.Empty;
                     if (!string.IsNullOrWhiteSpace(textToSpeak))
                     {
-                        _ = voicePipeline.SpeakAsync(textToSpeak, 2.5f);
+                        _ = autonomyEngine.ProcessUserMessageAsync(textToSpeak);
                     }
                 }
             }

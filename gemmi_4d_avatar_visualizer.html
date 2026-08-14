@@ -388,10 +388,10 @@
 
         <!-- Voice Dialogue & Audio Spectrum -->
         <div class="panel-section">
-            <div class="panel-title">🎙️ Sovereign Voice Dialogue & Audio Spectrum</div>
+            <div class="panel-title">🎙️ Neural Voice Dialogue &amp; Port 11436 LLM</div>
             <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <input type="text" id="speak-input" placeholder="Type words for Gemmi to speak..." style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 245, 212, 0.4); border-radius: 6px; padding: 6px 10px; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
-                <button class="btn" style="padding: 6px 12px; font-size: 11px;" onclick="sendSpeechText()">🗣️ Speak</button>
+                <input type="text" id="speak-input" placeholder="Ask Gemmi anything (queries port 11436)..." onkeydown="if(event.key==='Enter') sendSpeechText()" style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(0, 245, 212, 0.4); border-radius: 6px; padding: 6px 10px; color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 11px;">
+                <button class="btn" style="padding: 6px 12px; font-size: 11px;" onclick="sendSpeechText()">💬 Send</button>
             </div>
             <div style="height: 36px; background: rgba(0,0,0,0.6); border: 1px solid rgba(0,245,212,0.2); border-radius: 6px; display: flex; align-items: flex-end; justify-content: space-between; padding: 4px 6px; gap: 3px;" id="audio-eq-container">
                 <!-- 16 Equalizer Spectrum Bars -->
@@ -662,10 +662,10 @@
             const input = document.getElementById('speak-input');
             if (input && input.value.trim().length > 0) {
                 const text = input.value.trim();
-                sendServerCommand({ speak: text });
+                sendServerCommand({ chat: text });
                 const thoughtEl = document.getElementById('thought-box');
                 if (thoughtEl) {
-                    thoughtEl.innerText = `[Spoken Dialogue] "${text}"`;
+                    thoughtEl.innerText = `[Prompt Sent] "${text}" -> Querying local model on port 11436...`;
                 }
                 input.value = '';
             }
