@@ -44,8 +44,17 @@ public class GemmiNetworkServer
     private readonly ConcurrentDictionary<string, WebSocket> _activeClients = new();
     private CancellationTokenSource? _cts;
     private bool _isRunning;
+    private SpatialTelemetryFrame? _latestFrame;
 
     public event Action<string, string>? OnClientCommandReceived;
+
+    // REST API Handlers
+    public Func<string, Task<string>>? OnApiChatRequested { get; set; }
+    public Func<object>? OnApiStatusRequested { get; set; }
+    public Func<SpatialTelemetryFrame>? OnApiTelemetryRequested { get; set; }
+    public Func<object>? OnApiMemoryRequested { get; set; }
+    public Func<string, Dictionary<string, string>, Task<AgentTask>>? OnApiTaskDispatchRequested { get; set; }
+    public Func<IReadOnlyList<AgentTask>>? OnApiTaskHistoryRequested { get; set; }
 
     public GemmiNetworkServer(int port = 8088)
     {
@@ -54,6 +63,7 @@ public class GemmiNetworkServer
 
     public bool IsRunning => _isRunning;
     public int ConnectedClientCount => _activeClients.Count;
+    public SpatialTelemetryFrame? LatestFrame => _latestFrame;
 
     public void Start()
     {
@@ -93,6 +103,7 @@ public class GemmiNetworkServer
 
     public async Task BroadcastTelemetryAsync(SpatialTelemetryFrame frame)
     {
+        _latestFrame = frame;
         if (_activeClients.IsEmpty) return;
 
         string json = JsonSerializer.Serialize(frame, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
@@ -138,7 +149,7 @@ public class GemmiNetworkServer
                 }
                 else
                 {
-                    _ = Task.Run(() => ProcessHttpRequest(context));
+                    _ = Task.Run(() => ProcessHttpRequestAsync(context));
                 }
             }
             catch (Exception ex)
@@ -149,7 +160,7 @@ public class GemmiNetworkServer
         }
     }
 
-    private void ProcessHttpRequest(HttpListenerContext context)
+    private async Task ProcessHttpRequestAsync(HttpListenerContext context)
     {
         try
         {
@@ -167,6 +178,14 @@ public class GemmiNetworkServer
             string rawUrl = context.Request.RawUrl ?? "/";
             string path = rawUrl.Split('?')[0].TrimStart('/');
 
+            // ── REST API ROUTES ──────────────────────────────────────────────
+            if (path.StartsWith("api/", StringComparison.OrdinalIgnoreCase))
+            {
+                await HandleRestApiRequestAsync(path, context);
+                return;
+            }
+
+            // ── STATIC ASSET ROUTES ──────────────────────────────────────────
             string baseDir = @"C:\Users\admin\source\gemmi-engine";
             string localFilePath;
 
@@ -194,14 +213,14 @@ public class GemmiNetworkServer
 
             if (File.Exists(localFilePath))
             {
-                byte[] bytes = File.ReadAllBytes(localFilePath);
+                byte[] bytes = await File.ReadAllBytesAsync(localFilePath);
                 context.Response.StatusCode = 200;
                 context.Response.ContentLength64 = bytes.Length;
 
                 if (!string.Equals(context.Request.HttpMethod, "HEAD", StringComparison.OrdinalIgnoreCase))
                 {
-                    context.Response.OutputStream.Write(bytes, 0, bytes.Length);
-                    context.Response.OutputStream.Flush();
+                    await context.Response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+                    await context.Response.OutputStream.FlushAsync();
                 }
             }
             else
@@ -218,6 +237,158 @@ public class GemmiNetworkServer
         {
             context.Response.Close();
         }
+    }
+
+    private async Task HandleRestApiRequestAsync(string path, HttpListenerContext context)
+    {
+        context.Response.ContentType = "application/json; charset=utf-8";
+        string subRoute = path.Substring(4).ToLowerInvariant(); // strip "api/"
+
+        try
+        {
+            // GET /api/status or GET /api/health
+            if (subRoute == "status" || subRoute == "health")
+            {
+                var statusObj = OnApiStatusRequested?.Invoke() ?? new
+                {
+                    status = "online",
+                    engine = "Gemmi Multimodal Engine",
+                    version = "3.0.0",
+                    connectedClients = _activeClients.Count,
+                    timestamp = DateTime.UtcNow
+                };
+                await WriteJsonResponseAsync(context, 200, statusObj);
+                return;
+            }
+
+            // GET /api/telemetry
+            if (subRoute == "telemetry")
+            {
+                var frame = OnApiTelemetryRequested?.Invoke() ?? _latestFrame;
+                await WriteJsonResponseAsync(context, 200, frame ?? (object)new { message = "No telemetry frames available yet." });
+                return;
+            }
+
+            // GET /api/memory
+            if (subRoute == "memory")
+            {
+                var mem = OnApiMemoryRequested?.Invoke() ?? new { observations = new object[0] };
+                await WriteJsonResponseAsync(context, 200, mem);
+                return;
+            }
+
+            // POST /api/chat
+            if (subRoute == "chat" && context.Request.HttpMethod == "POST")
+            {
+                using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
+                string body = await reader.ReadToEndAsync();
+                string userMessage = string.Empty;
+
+                try
+                {
+                    using var doc = JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("message", out var msgProp) ||
+                        doc.RootElement.TryGetProperty("prompt", out msgProp) ||
+                        doc.RootElement.TryGetProperty("chat", out msgProp))
+                    {
+                        userMessage = msgProp.GetString() ?? string.Empty;
+                    }
+                }
+                catch { }
+
+                if (string.IsNullOrWhiteSpace(userMessage))
+                {
+                    await WriteJsonResponseAsync(context, 400, new { error = "Missing 'message' parameter in JSON payload." });
+                    return;
+                }
+
+                string reply = OnApiChatRequested != null
+                    ? await OnApiChatRequested.Invoke(userMessage)
+                    : "Gemmi Engine is online.";
+
+                await WriteJsonResponseAsync(context, 200, new
+                {
+                    user = userMessage,
+                    reply = reply,
+                    timestamp = DateTime.UtcNow
+                });
+                return;
+            }
+
+            // POST /api/command or POST /api/state
+            if ((subRoute == "command" || subRoute == "state") && context.Request.HttpMethod == "POST")
+            {
+                using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
+                string body = await reader.ReadToEndAsync();
+                OnClientCommandReceived?.Invoke("REST_API", body);
+
+                await WriteJsonResponseAsync(context, 200, new { status = "accepted", payload = body });
+                return;
+            }
+
+            // GET or POST /api/tasks
+            if (subRoute == "tasks")
+            {
+                if (context.Request.HttpMethod == "GET")
+                {
+                    var tasks = OnApiTaskHistoryRequested?.Invoke() ?? new List<AgentTask>();
+                    await WriteJsonResponseAsync(context, 200, tasks);
+                    return;
+                }
+                else if (context.Request.HttpMethod == "POST")
+                {
+                    using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
+                    string body = await reader.ReadToEndAsync();
+                    string toolName = "Ping";
+                    var parameters = new Dictionary<string, string>();
+
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(body);
+                        if (doc.RootElement.TryGetProperty("toolName", out var tProp))
+                        {
+                            toolName = tProp.GetString() ?? "Ping";
+                        }
+                        if (doc.RootElement.TryGetProperty("parameters", out var pProp) && pProp.ValueKind == JsonValueKind.Object)
+                        {
+                            foreach (var prop in pProp.EnumerateObject())
+                            {
+                                parameters[prop.Name] = prop.Value.ToString();
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (OnApiTaskDispatchRequested != null)
+                    {
+                        var task = await OnApiTaskDispatchRequested.Invoke(toolName, parameters);
+                        await WriteJsonResponseAsync(context, 200, task);
+                    }
+                    else
+                    {
+                        await WriteJsonResponseAsync(context, 200, new { message = "Orchestrator not attached." });
+                    }
+                    return;
+                }
+            }
+
+            // Fallback 404 for unknown API route
+            await WriteJsonResponseAsync(context, 404, new { error = $"Endpoint '/api/{subRoute}' not found." });
+        }
+        catch (Exception ex)
+        {
+            await WriteJsonResponseAsync(context, 500, new { error = ex.Message });
+        }
+    }
+
+    private static async Task WriteJsonResponseAsync(HttpListenerContext context, int statusCode, object data)
+    {
+        context.Response.StatusCode = statusCode;
+        string json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+        byte[] bytes = Encoding.UTF8.GetBytes(json);
+        context.Response.ContentLength64 = bytes.Length;
+        await context.Response.OutputStream.WriteAsync(bytes, 0, bytes.Length);
+        await context.Response.OutputStream.FlushAsync();
     }
 
     private async Task ProcessWebSocketClientAsync(HttpListenerContext context, CancellationToken cancellationToken)

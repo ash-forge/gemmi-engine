@@ -58,15 +58,16 @@ public class GemmiLiveSystemHost
         var collisionEngine = new SpatialCollisionEngine();
         var visionEngine = new GemmiSpatialVisionEngine(collisionEngine);
 
+        var state = new GemmiState();
         using var voicePipeline = new GemmiVoiceDialoguePipeline(micSensor, facialEngine);
-        var autonomyEngine = new GemmiAutonomousAgencyEngine(avatar, facialEngine, voicePipeline);
+        var autonomyEngine = new GemmiAutonomousAgencyEngine(avatar, facialEngine, voicePipeline, state);
 
         float[] currentAudioBands = new float[16];
         voicePipeline.OnAudioWaveformSampled += bands => currentAudioBands = bands;
 
-        autonomyEngine.OnLocomotionStateChanged += state =>
+        autonomyEngine.OnLocomotionStateChanged += postureState =>
         {
-            activeState = state;
+            activeState = postureState;
             Console.WriteLine($"[GemmiAutonomy] Shifted posture to: {activeState}");
         };
 
@@ -126,10 +127,48 @@ public class GemmiLiveSystemHost
             new PerceptionTarget { Id = "t2", Label = "Workstation Console", Position = new Vector3(3.0f, 1.0f, -1.0f) }
         };
 
+        var orchestrator = new GemmiAgentOrchestrator();
+        orchestrator.RegisterTool("Ping", "Pings the engine status", (param, ct) => Task.FromResult(AgentToolResult.Ok("Pong! Engine is healthy.")));
+        orchestrator.RegisterTool("ModelInspector", "Inspects active model parameters", (param, ct) => Task.FromResult(AgentToolResult.Ok("Model: haven-chat-v3.0.3.gguf | Status: Active")));
+        orchestrator.Start();
+
+        // Wire REST API Callbacks
+        networkServer.OnApiStatusRequested = () => new
+        {
+            status = "online",
+            engine = "Gemmi Sovereign Multimodal Engine",
+            version = "3.0.0",
+            activeState = activeState,
+            connectedClients = networkServer.ConnectedClientCount,
+            memoryObservations = state.MemoryBuffer.Count,
+            recentThought = autonomyEngine.RecentThoughts.Count > 0 ? autonomyEngine.RecentThoughts[^1] : "Cozy and observing",
+            timestamp = DateTime.UtcNow
+        };
+
+        networkServer.OnApiMemoryRequested = () => new
+        {
+            total = state.MemoryBuffer.Count,
+            recent = state.MemoryBuffer.GetRecent(20)
+        };
+
+        networkServer.OnApiChatRequested = async (userMsg) =>
+        {
+            return await autonomyEngine.ProcessUserMessageAsync(userMsg);
+        };
+
+        networkServer.OnApiTaskDispatchRequested = (toolName, param) =>
+        {
+            var task = orchestrator.EnqueueTask("REST Task", toolName, new Dictionary<string, object>());
+            return Task.FromResult(task);
+        };
+
+        networkServer.OnApiTaskHistoryRequested = () => orchestrator.History;
+
         Console.WriteLine("\n==========================================================================");
-        Console.WriteLine(" 🚀 GEMMI LIVE SYSTEM HOST RUNNING (Voice & Autonomy Mode)");
+        Console.WriteLine(" 🚀 GEMMI LIVE SYSTEM HOST RUNNING (Voice, Autonomy & REST API Mode)");
         Console.WriteLine(" 🌐 WebGL Visualizer Sync : http://localhost:8088/");
         Console.WriteLine(" ⚡ WebSocket Telemetry   : ws://localhost:8088/");
+        Console.WriteLine(" 📡 REST JSON API Base    : http://localhost:8088/api/");
         Console.WriteLine("==========================================================================");
 
         int frameIdx = 0;
